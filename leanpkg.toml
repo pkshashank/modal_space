@@ -1,0 +1,8 @@
+[package]
+name = "modal_space"
+version = "0.1"
+lean_version = "leanprover-community/lean:3.34.0"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "a58ae545c2ae578d7ac17ada4b89d3bb5bf69646"}
