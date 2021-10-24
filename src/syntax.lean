@@ -1,4 +1,3 @@
-
 -- Syntax of the basic modal language
 inductive bmod_form : Type
 | var (n : ℕ) : bmod_form
@@ -11,17 +10,20 @@ open bmod_form
 
 --Notations
 notation `⊥` := bot
-notation `!` := neg
+notation `!` φ := neg φ
 notation `p` := var
-infix `∧` := and
-notation `◇` := dia
+notation φ ` ⋀ ` ψ := and φ ψ
+notation `◇` φ := dia φ
 
 -- Common Abbreviations
-notation φ `∨` ψ := ¬ (¬ φ ∧ ¬ ψ)
-notation φ `→` ψ := (¬ φ) ∨ ψ
-notation φ `↔` ψ := (φ → ψ) ∧ (ψ → φ)
-notation `⊤` := ¬ ⊥
-notation `□` φ := ¬ (◇ (¬ φ))
+notation φ ` ⋁ ` ψ := !(!φ ⋀ !ψ)
+notation φ ` ⇒ ` ψ := (!φ) ⋁ ψ
+notation φ ` ⇔ ` ψ := (φ → ψ) ⋀ (ψ → φ)
+notation `⊤` := ! ⊥
+notation `□ ` φ := !(◇(!φ))
 
 #check ◇ (! ⊥)
-#check !(⊥ ∧ (◇ (p 1) ∧ p 2))
+#check !(⊥ ⇒ (◇ (p 1) ⋀ p 2))
+#check 123213 
+
+
