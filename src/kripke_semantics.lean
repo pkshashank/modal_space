@@ -33,7 +33,7 @@ def tr (M : model) : M.W → bmod_form →  Prop
 | w (◇ φ) := ∃ (u : M.to_frames.W), (model.to_frames M).R w u ∧ tr w φ
 
 -- Notation
-notation M `-` w `⊨` φ : 50 := tr M w φ
+notation M ` - ` w ` ⊨ ` φ : 50 := tr M w φ
 -- We can check what the abbreviations look like
 variables (φ ψ : bmod_form) (M : model) (w : M.W)
 #check M - w ⊨ φ
