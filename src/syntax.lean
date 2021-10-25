@@ -12,7 +12,7 @@ open bmod_form
 notation `⊥` := bot
 notation `!` φ := neg φ
 notation `p` := var
-notation φ ` ⋀ ` ψ := and φ ψ
+notation φ ` ⋀ ` ψ  := bmod_form.and φ ψ
 notation `◇` φ := dia φ
 
 -- Common Abbreviations
@@ -24,6 +24,5 @@ notation `□ ` φ := !(◇(!φ))
 
 #check ◇ (! ⊥)
 #check !(⊥ ⇒ (◇ (p 1) ⋀ p 2))
-#check 123213 
 
 
