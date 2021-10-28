@@ -1,3 +1,8 @@
+import prop_syntax
+
+set_option pp.coercions false
+---------------------------------------------------
+
 -- Syntax of the basic modal language
 inductive bmod_form : Type
 | var (n : ℕ) : bmod_form
@@ -25,4 +30,15 @@ notation `□ ` φ := !(◇(!φ))
 #check ◇ (! ⊥)
 #check !(⊥ ⇒ (◇ (p 1) ⋀ p 2))
 
+--------------------------------------------------------
 
+-- We will use coercion to formalize that every basic propositional formula is a basic modal formula
+
+instance prop_to_modal : has_coe prop_form bmod_form :=
+⟨λ φ, prop_form.rec_on φ (λ n, p n) (⊥) (λ ψ γ, !γ) (λ ψ1 ψ2 γ1 γ2, γ1 ⋀ γ2)⟩
+
+#print prop_to_modal
+
+-- To check that the coercion works as intended
+variable a : prop_form
+#check ◇ a

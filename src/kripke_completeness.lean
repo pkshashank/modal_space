@@ -1,5 +1,4 @@
 import kripke_semantics
-
 ----------------------------------------------------------
 
 -- We define uniform substitution.
@@ -21,17 +20,17 @@ def subs_inst : bmod_form → bmod_form → Prop := λ ψ φ, (∃ (v : ℕ → 
 example : subs_inst (((□ p 1 ⋁ p 2) ⋀ (! p 3 ⇒ □ p 4)) ⋁ p 5) ((p 1 ⋀ p 2) ⋁ p 3) :=
 begin
   rw subs_inst,
-    let v : ℕ → bmod_form := λ n, match n with
-      | 1 := (□ p 1 ⋁ p 2)
-      | 2 := (! p 3 ⇒ □ p 4)
-      | 3 := p 5
-      | a := bmod_form.var a
-    end,
-
+  let v : ℕ → bmod_form := λ n, match n with
+    | 0 := bmod_form.var 0
+    | 1 := (□ p 1 ⋁ p 2)
+    | 2 := (! p 3 ⇒ □ p 4)
+    | 3 := p 5
+    | (a + 4) := bmod_form.var (a + 4)
+  end,
+  
   existsi v,
   simp,
-
   repeat {split},
-  
-
 end
+
+

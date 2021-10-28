@@ -70,8 +70,6 @@ def valid (φ : bmod_form) (F : frames) : Prop := ∀ (v : ℕ → F.W → Prop)
 -- Class of frames
 def valid_class (φ : bmod_form) (clF : frames → Prop) := ∀ (F : frames), clF F → valid φ F
 
--- Note : I could have used a set membership instead of valid_class being a `guarded` kind of formula, but that was giving some error.
-
 -- Next, we have an example, which says that the formula p → ◇ p is valid on the class of all reflexive frames.
 
 variables (α : Sort u) (rel : α → α → Prop) (hr : reflexive rel) 
@@ -89,7 +87,7 @@ begin
   intros val w,
   let M := model.mk F val,
   show M - w ⊨ (p 1 ⇒ ◇ p 1),
-  simp [tr],
+  simp,
 
   intro hw,
   existsi w,
@@ -98,4 +96,112 @@ begin
   assumption,
 end
 
--------------------------------------------------------------
+-- As a short example, we prove that propositional tautologies are valid on all classes of frames.
+-- Before that we prove a helper lemma.
+-- We do it in steps.
+-- The first thing we do is to obtain a propositional valuation from a model valuation.
+noncomputable def frame_to_prop_val {M : model} (v_frame : ℕ → M.W → Prop) (w : M.W) : ℕ → bool := λ n, ite (v_frame n w) tt ff
+
+
+-- Next, we prove the helper lemma.
+-- The lemma says the following.
+-- Given a propositional formula φ, model M and a state w ∈ M, φ is true at w in M,
+-- iff φ is true under the above obtained vaulation.
+lemma prop_truth_inv : ∀ (φ : prop_form) M w, M - w ⊨ φ ↔ prop_true φ (frame_to_prop_val M.V w) :=
+begin
+  intros φ M w,
+  
+  --Induction on all propositional formulas
+  induction φ with n ψ hψ ψ1 ψ2 hψ1 hψ2,
+  
+  -- Case for the propositional variables
+  have hcoe_n : ↑(prop_form.var n) = p n, refl,
+  rw hcoe_n,
+  split,
+  intro hf,
+  rw [prop_true, prop_eval, frame_to_prop_val],
+  simp at *,
+  exact hf,
+
+  intro hv,
+  rw [prop_true, prop_eval, frame_to_prop_val] at hv,
+  simp at hv,
+  rw tr,
+  exact hv,
+
+  -- Case for bot
+  have hcoe_bot : ↑(prop_form.bot) = bmod_form.bot, refl,
+  split,
+
+  intro hf,
+  rw hcoe_bot at hf,
+  simp at hf,
+  contradiction,
+
+  intro hv,
+  rw [prop_true, prop_eval] at hv,
+  rw hcoe_bot,
+  simp at hv,
+  contradiction,
+
+  -- Case for neg
+  have hcoe_neg : ↑(prop_form.neg ψ) = ! ψ, refl,
+  split,
+
+  intro hf,
+  rw [hcoe_neg, tr, hψ] at hf,
+  rw [prop_true, prop_eval, frame_to_prop_val],
+  rw prop_true at hf,
+  simp at hf,
+  rw frame_to_prop_val at hf,
+  rw hf,
+  rw bnot,
+
+  intro hv,
+  rw [hcoe_neg, tr, hψ],
+  rw [prop_true, prop_eval, frame_to_prop_val] at hv,
+  simp at hv,
+  rw [prop_true, frame_to_prop_val, hv],
+  contradiction,
+  
+  -- Case for and 
+  have hcoe_and : ↑(prop_form.and ψ1 ψ2) = (↑ψ1 ⋀ ↑ψ2), refl,
+  split,
+
+  intro hf,
+  rw [hcoe_and, tr] at hf,
+  cases hf with hf1 hf2,
+  rw hψ1 at hf1,
+  rw hψ2 at hf2,
+  rw [prop_true, prop_eval, frame_to_prop_val],
+  simp,
+  rw [prop_true, frame_to_prop_val] at hf1,
+  rw [prop_true, frame_to_prop_val] at hf2,
+  exact ⟨hf1, hf2⟩,
+
+  intro hv,
+  rw [hcoe_and, tr, hψ1, hψ2, prop_true, prop_true, frame_to_prop_val],
+  rw [prop_true, frame_to_prop_val, prop_eval] at hv,
+  simp at hv,
+  assumption,
+  
+end
+
+-- Using the above lemma, we prove that propositonal tautologies are valid valid on all frames
+example : ∀ (φ : prop_form) (cl : frames → Prop), prop_taut φ → valid_class φ cl :=
+begin
+  intros φ cl htaut,
+  rw prop_taut at htaut,
+  rw valid_class,
+  intros F hcl,
+  rw valid,
+
+  intros v w,
+  let M := model.mk F v,
+  show M - w ⊨ ↑φ,
+
+  -- Using the helper lemma,
+  rw prop_truth_inv,
+  exact htaut (frame_to_prop_val M.V w),
+end
+---------------------------------------------------------------
