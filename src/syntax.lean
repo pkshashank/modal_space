@@ -1,5 +1,4 @@
 import prop_syntax
-
 set_option pp.coercions false
 ---------------------------------------------------
 
@@ -23,12 +22,9 @@ notation `◇` φ := dia φ
 -- Common Abbreviations
 notation φ ` ⋁ ` ψ := !(!φ ⋀ !ψ)
 notation φ ` ⇒ ` ψ := (!φ) ⋁ ψ
-notation φ ` ⇔ ` ψ := (φ → ψ) ⋀ (ψ → φ)
+notation φ ` ⇔ ` ψ := (φ ⇒ ψ) ⋀ (ψ ⇒ φ)
 notation `⊤` := ! ⊥
 notation `□ ` φ := !(◇(!φ))
-
-#check ◇ (! ⊥)
-#check !(⊥ ⇒ (◇ (p 1) ⋀ p 2))
 
 --------------------------------------------------------
 
@@ -37,8 +33,7 @@ notation `□ ` φ := !(◇(!φ))
 instance prop_to_modal : has_coe prop_form bmod_form :=
 ⟨λ φ, prop_form.rec_on φ (λ n, p n) (⊥) (λ ψ γ, !γ) (λ ψ1 ψ2 γ1 γ2, γ1 ⋀ γ2)⟩
 
-#print prop_to_modal
+-- A similar coercion for the respective sets
+instance props_to_modals : has_coe (set prop_form) (set bmod_form) := ⟨λ props, {φ | ∃ ψ ∈ props, φ = ↑ψ}⟩
 
--- To check that the coercion works as intended
-variable a : prop_form
-#check ◇ a
+

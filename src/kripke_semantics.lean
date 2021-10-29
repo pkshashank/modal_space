@@ -2,7 +2,7 @@ import data.nat.basic
 import syntax
 import tactic.basic
 set_option pp.notation true
-attribute [instance] classical.prop_decidable
+
 
 ---------------------------------------------------------
 -- Kripke semantics
@@ -17,7 +17,7 @@ example : frames := ⟨nat.lt⟩
 example : frames := @frames.mk unit (λ a b, true)
 
 -- Next, we define models, which are frames + valuations
-structure model extends frames := (V : ℕ → W → Prop)
+structure model extends frames := (V : ℕ → set W)
 
 open model
 
@@ -75,7 +75,7 @@ def valid_class (φ : bmod_form) (clF : frames → Prop) := ∀ (F : frames), cl
 variables (α : Sort u) (rel : α → α → Prop) (hr : reflexive rel) 
 
 -- We first try to create the object `the class of all reflexive frames`, which we call as rel_cl
-def rel_cl (f : frames) : Prop := reflexive f.R
+def rel_cl : set frames := { f | reflexive f.R }
 
 example : valid_class (p 1 ⇒ ◇ p 1) (rel_cl) :=
 begin
@@ -188,7 +188,7 @@ begin
 end
 
 -- Using the above lemma, we prove that propositonal tautologies are valid valid on all frames
-example : ∀ (φ : prop_form) (cl : frames → Prop), prop_taut φ → valid_class φ cl :=
+example : ∀ (φ : prop_form) (cl : set frames), prop_taut φ → valid_class φ cl :=
 begin
   intros φ cl htaut,
   rw prop_taut at htaut,

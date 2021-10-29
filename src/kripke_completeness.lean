@@ -1,4 +1,5 @@
-import kripke_semantics
+import syntax
+
 ----------------------------------------------------------
 
 -- We define uniform substitution.
@@ -33,4 +34,36 @@ begin
   repeat {split},
 end
 
+--Next, we define normal modal logics as an inductive type.
+-- We first define the modal formulas K and Dual.
+def K : bmod_form := (□ p 1 ⇒ □ p 2) ⇒ □ (p 1 ⇒ p 2)
+def Dual : bmod_form:= ◇ (p 1) ⇔ ! □ ! p 1
 
+-- We present some helper definitions.
+-- The construction will be bottom up.
+-- We will start with a base set and construct the normal logic by taking a closure
+-- under needed functions.
+
+-- This will be the starting set
+def base (Γ : set bmod_form) := Γ ∪ prop_taut ∪ {Dual, K}
+
+-- mp_set s is exactly the formulas that can be obtained from s by applying modus ponens to elements in s
+def mp_set (s :  set bmod_form) : set bmod_form := { φ | ∃ φ1 φ2 ∈ s, (φ2 = (φ1 ⇒ φ))}
+
+-- A similar definition for generalisation
+def gen_set (s : set bmod_form) : set bmod_form := { φ | ∃ ψ ∈ s, (φ = □ ψ) }
+
+-- And a similar one for substituion instances
+def subst_set (s : set bmod_form) : set bmod_form := { φ | ∃ ψ ∈ s, subs_inst φ ψ }
+
+-- Next, we construct the sets and in the end take the union 
+def C (Γ : set bmod_form) : ℕ → set bmod_form
+| 0 := base Γ 
+| (n + 1) := (C n) ∪ mp_set (C n) ∪ gen_set (C n) ∪ subst_set (C n)
+
+-- Once, we have the family, we take its union and define it to be KΓ
+-- We do this in two steps, first we make a set containing the family
+def set_Cs (Γ : set bmod_form) : set (set bmod_form) := { D | ∃ n, D = C Γ n }
+
+-- Finally we take the union on this set containing the family to obtain the normal logic KΓ
+def KΓ (Γ : set bmod_form) := ⋃₀ set_Cs Γ
