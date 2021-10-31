@@ -1,3 +1,4 @@
+import tactic
 attribute [instance] classical.prop_decidable
 -------------------------------------------------------
 --Syntax for basic propositonal language
