@@ -160,12 +160,36 @@ begin
 end
 
 --This lemma says that for m > n , C Γ n ⊆ C Γ m
-lemma cn_in_cm_if_n_le_m {Γ : set bmod_form} {n m : ℕ} : m > n → C Γ n ⊆ C Γ m :=
+lemma cn_subset_cnk {Γ : set bmod_form} {n k : ℕ} : C Γ n ⊆ (C Γ (k + n)) :=
 begin
-  sorry
+  induction k with k ik,
+  {
+    rw zero_add,
+  },
+  transitivity,
+  exact ik,
+  have h0 : (k + 1) + n = (k + n) + 1,
+  {
+    rw add_assoc,
+    rw add_comm 1 n,
+    rw add_assoc,
+  },
+  rw h0,
+  intros φ h1,
+  rw C,
+  repeat {apply or.intro_left},
+  exact h1,
 end
 
-lemma lem1 {D : set bmod_form} : D ∈ normal_logic ↔ (({K, Dual} ∪ ↑prop_taut ⊆ D) ∧ mp_set D ⊆ D ∧ gen_set D ⊆ D ∧ subst_set D ⊆ D) :=
+lemma mgn_imp_cn_in_cm {m n : ℕ} {Γ : set bmod_form} : m ≥ n → C Γ n ⊆ C Γ m :=
+begin
+  intro h0,
+  have h1 : m = (m - n) + n, by omega,
+  rw h1,
+  apply cn_subset_cnk,
+end
+
+lemma lem1 {D : set bmod_form} : D ∈ normal_logic ↔ (({Dual, K} ∪ ↑prop_taut ⊆ D) ∧ mp_set D ⊆ D ∧ gen_set D ⊆ D ∧ subst_set D ⊆ D) :=
 begin
   
   split,
@@ -174,34 +198,139 @@ begin
   rw normal_logic at hd,
   simp at hd,
   cases hd with Γ hd,
-  have hc0 : C Γ 0 ⊆ KΓ Γ, sorry,
+  have hc0 : C Γ 0 ⊆ KΓ Γ,
+  {
+    intros φ h0,
+    rw kg_iff_cn,
+    existsi 0,
+    exact h0,
+  },
   repeat {split},
   refine set.union_subset_iff.mpr _,
   split,
   {
     rw hd,
     transitivity,
-    have h0 : {K, Dual} ⊆ C Γ 0,
-      {sorry},
+    have h0 : {Dual, K} ⊆ C Γ 0,
+      {
+        rw [C,base],
+        intros φ h0,
+        apply or.intro_right,
+        exact h0,
+      },
     exact h0,
     exact hc0,
   },
   {
     rw hd,
     transitivity,
-    have h0 : ↑prop_taut ⊆ C Γ 0, sorry,
+    have h0 : ↑prop_taut ⊆ C Γ 0, 
+    {
+      rw [C,base],
+      intros φ h0,
+      apply or.intro_left,
+      apply or.intro_right,
+      exact h0,
+    },
     exact h0,
     exact hc0,
   },
   {
+   rw hd,
+   intros φ h0,
+   rw kg_iff_cn,
+   rw mp_set at h0,
+   simp at h0,
+   rcases h0 with ⟨ψ, h1⟩,
+   cases h1 with h1 h2,
+   rw kg_iff_cn at h1,
+   rw kg_iff_cn at h2,
+   cases h1 with n1 h1,
+   cases h2 with n2 h2,
+   have h3, from classical.em (n1 ≥ n2),
+   cases h3 with h3 h4,
+    {
+      existsi (n1 + 1),
+      rw C,
+      iterate 2 {apply or.intro_left},
+      apply or.intro_right,
+      rw mp_set,
+      simp,
+      existsi ψ,
+      apply and.intro h1,
+      have h4 : C Γ n2 ⊆ C Γ n1, from mgn_imp_cn_in_cm h3,
+      apply h4,
+      exact h2,
+    },
+    have h3 : n2 ≥ n1, omega,
+    existsi (n2 + 1),
+      rw C,
+      iterate 2 {apply or.intro_left},
+      apply or.intro_right,
+      rw mp_set,
+      simp,
+      existsi ψ,
+      rw and.comm,
+      apply and.intro h2,
+      have h4 : C Γ n1 ⊆ C Γ n2, from mgn_imp_cn_in_cm h3,
+      apply h4,
+      exact h1,
+
+  },
+  {
+    rw hd,
     intros φ h0,
-    rw mp_set at h0,
+    rw kg_iff_cn,
+    rw gen_set at h0,
     simp at h0,
-    rcases h0 with ⟨ψ,h1,h2⟩,
-    rw hd at *,
-    rw kg_iff_cn at *,
-    cases h1 with n1 h1,
-    cases h2 with n2 h2,
-  }
-  
+    rcases h0 with ⟨ψ, h1,h2⟩,
+    rw kg_iff_cn at h1,
+    cases h1 with n h3,
+    existsi n + 1,
+    rw C,
+    apply or.intro_left,
+    repeat {apply or.intro_right},
+    rw gen_set,
+    rw set.mem_set_of_eq,
+    existsi ψ,
+    existsi h3,
+    exact h2,
+  },
+  {
+    rw hd,
+    intros φ h0,
+    rw kg_iff_cn,
+    rw subst_set at h0,
+    simp at h0,
+    rcases h0 with ⟨ψ, h1,h2⟩,
+    rw kg_iff_cn at h1,
+    cases h1 with n h3,
+    existsi n + 1,
+    rw C,
+    repeat {apply or.intro_right},
+    rw subst_set,
+    rw set.mem_set_of_eq,
+    existsi ψ,
+    existsi h3,
+    exact h2,
+    -- Notice how the code is very similiar to the previous case
+    -- There must be a way to make it nicer
+  },
+  intro h0,
+  rcases h0 with ⟨h1,h2,h3,h4⟩,
+  rw [normal_logic, set.mem_set_of_eq],
+  existsi D,
+  -- It is the smallest normal logic containing itself
+  have h5 : ∀ n, C D n ⊆ D,
+    {
+      intro n,
+      induction n with k ih,
+        {
+          rw [C,base],
+          intros φ h5,
+          cases h5 with h5 h6,
+          sorry,
+        },
+      sorry,
+    },
 end
