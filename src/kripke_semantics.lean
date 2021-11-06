@@ -44,7 +44,7 @@ include φ ψ M w
 -- We can check what the abbreviations look like
 example : M - w ⊨ (φ ⋁ ψ) = (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
 begin
-  simp, -- Lean's simplifier does most of the job here.
+  simp only [tr, not_and, not_not, eq_iff_iff], -- Lean's simplifier does most of the job here.
   tauto, -- We are proving a propositional tautology
 end
 
@@ -87,7 +87,7 @@ begin
   intros val w,
   let M := model.mk F val,
   show M - w ⊨ (p 1 ⇒ ◇ p 1),
-  simp,
+  simp only [not_exists, exists_prop, tr, not_and, not_not, not_forall],
 
   intro hw,
   existsi w,
@@ -120,7 +120,7 @@ begin
   split,
   intro hf,
   rw [prop_true, prop_eval, frame_to_prop_val],
-  simp at *,
+  simp only [and_true, tr, eq_self_iff_true, if_false_right_eq_and, ite_eq_tt_distrib] at *,
   exact hf,
 
   intro hv,
@@ -141,7 +141,7 @@ begin
   intro hv,
   rw [prop_true, prop_eval] at hv,
   rw hcoe_bot,
-  simp at hv,
+  simp only at hv,
   contradiction,
 
   -- Case for neg
@@ -152,7 +152,7 @@ begin
   rw [hcoe_neg, tr, hψ] at hf,
   rw [prop_true, prop_eval, frame_to_prop_val],
   rw prop_true at hf,
-  simp at hf,
+  simp only [eq_ff_eq_not_eq_tt] at hf,
   rw frame_to_prop_val at hf,
   rw hf,
   rw bnot,
@@ -160,7 +160,7 @@ begin
   intro hv,
   rw [hcoe_neg, tr, hψ],
   rw [prop_true, prop_eval, frame_to_prop_val] at hv,
-  simp at hv,
+  simp only [bnot_eq_true_eq_eq_ff] at hv,
   rw [prop_true, frame_to_prop_val, hv],
   contradiction,
   
@@ -174,7 +174,7 @@ begin
   rw hψ1 at hf1,
   rw hψ2 at hf2,
   rw [prop_true, prop_eval, frame_to_prop_val],
-  simp,
+  simp only [band_eq_true_eq_eq_tt_and_eq_tt],
   rw [prop_true, frame_to_prop_val] at hf1,
   rw [prop_true, frame_to_prop_val] at hf2,
   exact ⟨hf1, hf2⟩,
@@ -182,7 +182,7 @@ begin
   intro hv,
   rw [hcoe_and, tr, hψ1, hψ2, prop_true, prop_true, frame_to_prop_val],
   rw [prop_true, frame_to_prop_val, prop_eval] at hv,
-  simp at hv,
+  simp only [band_eq_true_eq_eq_tt_and_eq_tt] at hv,
   assumption,
   
 end

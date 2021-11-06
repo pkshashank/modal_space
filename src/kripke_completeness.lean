@@ -1,8 +1,9 @@
 import syntax
 set_option trace.simplify.rewrite true
+
 ----------------------------------------------------------
 
--- We define uniform substitution.
+--We define uniform substitution
 @[simp]
 def subs (var_sub : ℕ → bmod_form) : bmod_form → bmod_form
 | (p n) := var_sub n
@@ -30,7 +31,7 @@ begin
   end,
   
   existsi v,
-  simp,
+  simp only [subs],
   repeat {split},
 end
 
@@ -131,7 +132,7 @@ begin
     intros h0,
     rw [KΓ,set_Cs] at h0,
     rw set.mem_set_of_eq at h0,
-    simp at h0,
+    simp only [exists_prop, set.mem_set_of_eq] at h0,
     rcases h0 with ⟨D,h1,h2⟩,
     cases h1 with m h1,
     existsi m,
@@ -146,7 +147,7 @@ begin
       {
         rw [KΓ, set_Cs],
         intros ψ h0,
-        simp,
+        simp only [exists_prop, set.mem_set_of_eq],
         existsi C Γ n,
         split,
           {
@@ -189,6 +190,12 @@ begin
   apply cn_subset_cnk,
 end
 
+--Another helper lemma
+lemma lem0 {α β : Type*} {A B : set α} (f : α → β) : A ⊆ B → f A ⊆ f B :=
+begin
+intros h0 b h1,
+end
+
 lemma lem1 {D : set bmod_form} : D ∈ normal_logic ↔ (({Dual, K} ∪ ↑prop_taut ⊆ D) ∧ mp_set D ⊆ D ∧ gen_set D ⊆ D ∧ subst_set D ⊆ D) :=
 begin
   
@@ -196,7 +203,7 @@ begin
 
   intro hd,
   rw normal_logic at hd,
-  simp at hd,
+  simp only [set.mem_set_of_eq] at hd,
   cases hd with Γ hd,
   have hc0 : C Γ 0 ⊆ KΓ Γ,
   {
@@ -240,97 +247,110 @@ begin
    intros φ h0,
    rw kg_iff_cn,
    rw mp_set at h0,
-   simp at h0,
+   simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq] at h0,
    rcases h0 with ⟨ψ, h1⟩,
-   cases h1 with h1 h2,
-   rw kg_iff_cn at h1,
-   rw kg_iff_cn at h2,
-   cases h1 with n1 h1,
-   cases h2 with n2 h2,
-   have h3, from classical.em (n1 ≥ n2),
-   cases h3 with h3 h4,
+   cases h1 with ψ1 h2,
+   rcases h2 with ⟨h2,h3,h4⟩,
+   rw kg_iff_cn at h2 h3,
+   cases h2 with n1 h2,
+   cases h3 with n2 h3,
+   apply or.elim (classical.em (n1 ≥ n2)),
     {
-      existsi (n1 + 1),
+      intro h5,
+      existsi n1 + 1,
+      have h6 : ψ ∈ C Γ n1,
+        {
+          apply mgn_imp_cn_in_cm,
+            {
+              exact h5,
+            },
+          exact h3,
+        },
       rw C,
       iterate 2 {apply or.intro_left},
       apply or.intro_right,
       rw mp_set,
-      simp,
+      simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq],
       existsi ψ,
-      apply and.intro h1,
-      have h4 : C Γ n2 ⊆ C Γ n1, from mgn_imp_cn_in_cm h3,
-      apply h4,
-      exact h2,
+      existsi ψ1,
+      repeat {split},
+      repeat {assumption},
     },
-    have h3 : n2 ≥ n1, omega,
-    existsi (n2 + 1),
+    intro h5,
+      existsi n2 + 1,
+      have h7 : n2 ≥ n1,
+        {
+          exact le_of_not_ge h5,
+        },
+      have h6 : ψ1 ∈ C Γ n2,
+        {
+          apply mgn_imp_cn_in_cm,
+            {
+              exact h7,
+            },
+        assumption,
+        },
       rw C,
       iterate 2 {apply or.intro_left},
       apply or.intro_right,
       rw mp_set,
-      simp,
+      simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq],
       existsi ψ,
-      rw and.comm,
-      apply and.intro h2,
-      have h4 : C Γ n1 ⊆ C Γ n2, from mgn_imp_cn_in_cm h3,
-      apply h4,
-      exact h1,
-
+      existsi ψ1,
+      repeat {split},
+      repeat {assumption},
   },
   {
-    rw hd,
     intros φ h0,
-    rw kg_iff_cn,
     rw gen_set at h0,
-    simp at h0,
-    rcases h0 with ⟨ψ, h1,h2⟩,
-    rw kg_iff_cn at h1,
-    cases h1 with n h3,
+    simp only [exists_prop, set.mem_set_of_eq] at h0,
+    rw [hd,kg_iff_cn],
+    rcases h0 with ⟨ψ,h0,h1⟩,
+    rw [hd,kg_iff_cn] at h0,
+    cases h0 with n h0,
     existsi n + 1,
     rw C,
     apply or.intro_left,
-    repeat {apply or.intro_right},
+    apply or.intro_right,
     rw gen_set,
-    rw set.mem_set_of_eq,
+    simp only [exists_prop, set.mem_set_of_eq],
     existsi ψ,
-    existsi h3,
-    exact h2,
-  },
-  {
-    rw hd,
+    exact and.intro h0 h1,
+    },
+    {
     intros φ h0,
-    rw kg_iff_cn,
+
     rw subst_set at h0,
-    simp at h0,
-    rcases h0 with ⟨ψ, h1,h2⟩,
-    rw kg_iff_cn at h1,
-    cases h1 with n h3,
+    simp only [exists_prop, set.mem_set_of_eq] at h0,
+    rw [hd,kg_iff_cn],
+    rcases h0 with ⟨ψ,h0,h1⟩,
+    rw [hd,kg_iff_cn] at h0,
+    cases h0 with n h0,
     existsi n + 1,
     rw C,
-    repeat {apply or.intro_right},
+    apply or.intro_right,
     rw subst_set,
-    rw set.mem_set_of_eq,
+    simp only [exists_prop, set.mem_set_of_eq],
     existsi ψ,
-    existsi h3,
-    exact h2,
-    -- Notice how the code is very similiar to the previous case
-    -- There must be a way to make it nicer
-  },
+    exact and.intro h0 h1,
+    },
   intro h0,
-  rcases h0 with ⟨h1,h2,h3,h4⟩,
-  rw [normal_logic, set.mem_set_of_eq],
-  existsi D,
-  -- It is the smallest normal logic containing itself
-  have h5 : ∀ n, C D n ⊆ D,
+  have : ∀ n, C D n ⊆ D,
     {
       intro n,
       induction n with k ih,
         {
           rw [C,base],
-          intros φ h5,
-          cases h5 with h5 h6,
-          sorry,
+          rcases h0 with ⟨h0,h1,h2,h3⟩,
+          intros φ h4,
+          simp only [set.union_subset_iff] at h0,
+          cases h0 with h0 h5,
+          iterate 2 {cases h4},
+          iterate 3 {tauto},
         },
-      sorry,
-    },
+      rw C,
+      
+      
+    }
 end
+#lint
