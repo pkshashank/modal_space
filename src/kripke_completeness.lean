@@ -1,6 +1,4 @@
 import syntax
-set_option trace.simplify.rewrite true
-
 ----------------------------------------------------------
 
 --We define uniform substitution
@@ -119,10 +117,14 @@ begin
   exact (ha ψ),
 end
 
--- Next, we prove that intersection of normal logics is a normal logic
--- But before that it will be better to prove that the top down approach and the
--- bottom up approach result in the same set
--- We have a series of helper lemmas which will help in breaking down the proof.
+/-We have defined normal logics as set which starting from a 
+base set, are built up step by step. Thus, they are contain K, 
+Dual, the proposition tautologies and are closed under modus 
+ponens, generalisation and uniform substitution. So, every such 
+set is a normal logic. What about the converse? Does every set 
+which contains K, Dual, propostional tautologies and is closed 
+under above mentioned operations a normal logic? The next 
+theorem answers in the affirmative.-/
 
 -- This lemma says essentially that KΓ Γ is the union of C Γs.
 lemma kg_iff_cn {Γ : set bmod_form} {φ : bmod_form} : φ ∈ KΓ Γ ↔ ∃ n, φ ∈ C Γ n :=
@@ -190,13 +192,51 @@ begin
   apply cn_subset_cnk,
 end
 
---Another helper lemma
-lemma lem0 {α β : Type*} {A B : set α} (f : α → β) : A ⊆ B → f A ⊆ f B :=
+--More helper lemmas
+lemma mp_contain {A B : set bmod_form} : A ⊆ B → mp_set A ⊆ mp_set B :=
 begin
-intros h0 b h1,
+  intros h0 φ h1,
+  rw mp_set at h1 ⊢,
+  simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq] at h1 ⊢,
+  rcases h1 with ⟨ψ1,ψ2,h2,h3,h4⟩,
+  existsi ψ1,
+  existsi ψ2,
+  exact ⟨h0 h2, ⟨h0 h3, h4⟩⟩,
 end
 
-lemma lem1 {D : set bmod_form} : D ∈ normal_logic ↔ (({Dual, K} ∪ ↑prop_taut ⊆ D) ∧ mp_set D ⊆ D ∧ gen_set D ⊆ D ∧ subst_set D ⊆ D) :=
+lemma gen_set_contain {A B : set bmod_form} : A ⊆ B → gen_set A ⊆ gen_set B :=
+begin
+  intros h0 φ h1,
+  rw gen_set at h1 ⊢,
+  simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq] at h1 ⊢,
+  rcases h1 with ⟨ψ1,h2,h3⟩,
+  existsi ψ1,
+  exact ⟨h0 h2, h3⟩,
+end
+
+lemma subst_set_contain {A B : set bmod_form} : A ⊆ B → subst_set A ⊆ subst_set B :=
+begin
+  intros h0 φ h1,
+  rw subst_set at h1 ⊢,
+  simp only [exists_prop, exists_eq_right, exists_and_distrib_left, set.mem_set_of_eq] at h1 ⊢,
+  rcases h1 with ⟨ψ1,h2,h3⟩,
+  existsi ψ1,
+  exact ⟨h0 h2, h3⟩,
+end
+
+/-This needs a pause. The proofs of the preceeding two lemmas are 
+identical except a term. A better formalization would have a
+general lemma from which these two results would follow by substituting
+ gen_set or subst_set. The sets should ideally have been defined as
+images set of a function, and not as functions on sets itself.
+Defining them as image sets would have encapsulated more information
+into them. The problem I encountered was that mp_set is the image
+under a partial function, and I don't know how do define a partial 
+function without using 'option'. Maybe something can be done using option
+without breaking much stuff here.
+-/
+
+theorem normal_is_closed {D : set bmod_form} : D ∈ normal_logic ↔ (({Dual, K} ∪ ↑prop_taut ⊆ D) ∧ mp_set D ⊆ D ∧ gen_set D ⊆ D ∧ subst_set D ⊆ D) :=
 begin
   
   split,
@@ -335,7 +375,7 @@ begin
     exact and.intro h0 h1,
     },
   intro h0,
-  have : ∀ n, C D n ⊆ D,
+  have h1 : ∀ n, C D n ⊆ D,
     {
       intro n,
       induction n with k ih,
@@ -349,8 +389,22 @@ begin
           iterate 3 {tauto},
         },
       rw C,
-      
-      
-    }
+      intros φ h1,
+      rcases h0 with ⟨h2,h3,h4,h5⟩,
+      iterate 3 {cases h1},
+      exact ih h1,
+      exact h3 (mp_contain ih h1),
+      exact h4 (gen_set_contain ih h1),
+      exact h5 (subst_set_contain ih h1),
+    },
+  rw normal_logic,
+  simp only [set.mem_set_of_eq],
+  existsi D,
+  rw set.subset.antisymm_iff,
+  split,
+    {exact gam_sub_normal D},
+    intros φ h2,
+    rw kg_iff_cn at h2,
+    cases h2 with n h2,
+    exact (h1 n) h2,
 end
-#lint
