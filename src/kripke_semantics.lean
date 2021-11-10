@@ -17,19 +17,19 @@ example : frames := ⟨nat.lt⟩
 example : frames := @frames.mk unit (λ a b, true)
 
 -- Next, we define models, which are frames + valuations
-structure model extends frames := (V : ℕ → set W)
+structure model := (F : frames) (V : ℕ → set F.W)
 
 open model
 
 -- Definition of truth 
 
 @[simp]
-def tr (M : model) : M.W → bmod_form → Prop
+def tr (M : model) : M.F.W → bmod_form → Prop
 | w (p n) := M.V n w
 | _ ⊥ := false
 | w (! φ) := ¬ (tr w φ)
 | w (φ ⋀ ψ) := tr w φ ∧ tr w ψ
-| w (◇ φ) := ∃ (u : M.to_frames.W), (model.to_frames M).R w u ∧ tr u φ
+| w (◇ φ) := ∃ (u : M.F.W), M.F.R w u ∧ tr u φ
 
 -- The usual notation for truth
 notation M ` - ` w ` ⊨ ` φ  : 50 := tr M w φ
@@ -38,7 +38,7 @@ notation M ` - ` w ` ⊨ ` φ  : 50 := tr M w φ
 
 section abbreviations
 
-variables (φ ψ : bmod_form) (M : model) (w : M.W)
+variables (φ ψ : bmod_form) (M : model) (w : M.F.W)
 include φ ψ M w
 
 -- We can check what the abbreviations look like
@@ -49,7 +49,7 @@ begin
 end
 
 -- It is important to see how truth of boxed formulas is interpreted
-example : (M - w ⊨ □ φ) = ∀ (u : M.W), (M.R w u → M - u ⊨ φ) := by simp
+example : (M - w ⊨ □ φ) = ∀ (u : M.F.W), (M.F.R w u → M - u ⊨ φ) := by simp
 
 -- Similarly for other abbreviations we have the following.
 
@@ -100,7 +100,7 @@ end
 -- Before that we prove a helper lemma.
 -- We do it in steps.
 -- The first thing we do is to obtain a propositional valuation from a model valuation.
-noncomputable def frame_to_prop_val {M : model} (v_frame : ℕ → M.W → Prop) (w : M.W) : ℕ → bool := λ n, ite (v_frame n w) tt ff
+noncomputable def frame_to_prop_val {M : model} (v_frame : ℕ → M.F.W → Prop) (w : M.F.W) : ℕ → bool := λ n, ite (v_frame n w) tt ff
 
 
 -- Next, we prove the helper lemma.

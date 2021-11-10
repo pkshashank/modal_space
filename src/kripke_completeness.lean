@@ -1,4 +1,6 @@
 import syntax
+import kripke_semantics
+set_option trace.check true
 ----------------------------------------------------------
 
 --We define uniform substitution
@@ -35,7 +37,7 @@ end
 
 --Next, we define normal modal logics as an inductive type.
 --We first define the modal formulas K and Dual.
-def K : bmod_form := (□ p 1 ⇒ □ p 2) ⇒ □ (p 1 ⇒ p 2)
+def K : bmod_form := (□ (p 1 ⇒ p 2))⇒ ((□ p 1) ⇒ □ p 2)
 def Dual : bmod_form:= ◇ (p 1) ⇔ ! □ ! p 1
 
 -- We present some helper definitions.
@@ -408,3 +410,6 @@ begin
     cases h2 with n h2,
     exact (h1 n) h2,
 end
+
+/- The above theorem gives an easy way to prove that the set of 
+all modal formulas is a normal logic. -/
