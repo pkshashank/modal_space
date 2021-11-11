@@ -187,8 +187,8 @@ begin
   
 end
 
--- Using the above lemma, we prove that propositonal tautologies are valid valid on all frames
-example : ∀ (φ : prop_form) (cl : set frames), prop_taut φ → valid_class φ cl :=
+-- Using the above lemma, we prove that propositonal tautologies are valid on all frames
+theorem val_prop_taut : ∀ (φ : prop_form) (cl : set frames), prop_taut φ → valid_class φ cl :=
 begin
   intros φ cl htaut,
   rw prop_taut at htaut,
