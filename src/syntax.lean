@@ -37,5 +37,4 @@ instance prop_to_modal : has_coe prop_form bmod_form :=
 -- A similar coercion for the respective sets, using the 
 -- above coercion
 instance props_to_modals : has_coe (set prop_form) (set bmod_form) := ⟨λ props, prop_to_modal.coe ''(props)⟩
-
-
+-------------------------------------------------

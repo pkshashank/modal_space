@@ -49,11 +49,12 @@ begin
 end
 
 -- It is important to see how truth of boxed formulas is interpreted
-example : (M - w ⊨ □ φ) = ∀ (u : M.F.W), (M.F.R w u → M - u ⊨ φ) := by simp
+example : (M - w ⊨ □ φ) = ∀ (u : M.F.W), (M.F.R w u → M - u ⊨ φ) := by simp only [not_exists, tr, not_and, not_not]
+
 
 -- Similarly for other abbreviations we have the following.
 
-example : (M - w ⊨ (φ ⇒ ψ)) = (M - w ⊨ φ → M - w ⊨ ψ) := by simp
+example : (M - w ⊨ (φ ⇒ ψ)) = (M - w ⊨ φ → M - w ⊨ ψ) := by simp only [tr, not_and, not_not]
 example : (M - w ⊨ ⊤) := 
 begin
   iterate 2 {rw tr},
@@ -125,7 +126,7 @@ begin
 
   intro hv,
   rw [prop_true, prop_eval, frame_to_prop_val] at hv,
-  simp at hv,
+  simp only [and_true, eq_self_iff_true, if_false_right_eq_and, ite_eq_tt_distrib] at hv,
   rw tr,
   exact hv,
 
@@ -135,7 +136,7 @@ begin
 
   intro hf,
   rw hcoe_bot at hf,
-  simp at hf,
+  simp only [tr] at hf,
   contradiction,
 
   intro hv,
