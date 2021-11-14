@@ -70,8 +70,8 @@ begin
 end
 
 
-/- Next, we have a definition and a lemma which will be used 
-later -/
+/- Next, we have a definition and a lemma which will be 
+used later -/
 def sub_model (M : model) (s : ℕ → bmod_form) : model := ⟨M.F, λ n, {w' | M - w' ⊨ s(n)}⟩
 
 lemma val_subst : ∀ M φ s w, (M - w ⊨ subs s φ ↔ (sub_model M s) - w ⊨ φ) :=
@@ -225,7 +225,7 @@ begin
   refine (val_subst {F := F, V := v} ψ s w).mpr h1,  
 end
 
-/- Thus, the set of formula valid on a class of frams forms a 
+/- Thus, the set of formula valid on a class of frames forms a 
 normal logic-/
 
 /- Next, intersection of normal logics is a normal logic-/
@@ -291,12 +291,82 @@ begin
 end
 
 /- Thus, there's a smallest normal logic, which is also called K.
-We will call it nl_K for 'normal logic K', as we already have 
+We will call it nl K for 'normal logic K', as we already have 
 something named K -/
-def nl_K := ⋂₀ normal_logic
 
-/-nl_K is a normal logic by the previous lemma -/
-example : nl_K ∈ normal_logic :=
-normal_intersection normal_logic (set.subset.refl normal_logic)
+def nl (Γ : set bmod_form) := ⋂₀ {L ∈ normal_logic | Γ ⊆ L}
 
-------------------------------------------------------------
+/- These nls are normal logic as they are intersection of normal logics -/
+
+lemma nls_are_normal : ∀ Γ, nl Γ ∈ normal_logic :=
+begin
+  intro Γ,
+  rw nl,
+  apply normal_intersection,
+  apply set.sep_subset,
+end
+
+/- This lemma brings everything together. This says that 
+top down and bottom up result in the same set. -/
+lemma nls_are_KΓs : ∀ Γ, nl Γ = KΓ Γ :=
+begin
+  intro Γ,
+  rw set.subset.antisymm_iff,
+  split,
+    {
+      rw nl,
+      have h0 : KΓ Γ ∈ normal_logic,
+        {
+          rw normal_logic,
+          simp only [exists_apply_eq_apply', set.mem_set_of_eq],
+        },
+      have h1 : Γ ⊆ KΓ Γ, exact gam_sub_normal Γ,
+      refine set.sInter_subset_of_mem _,
+      exact ⟨h0,h1⟩,
+    },
+  rw nl,
+  simp only [and_imp, set.mem_sep_eq, set.subset_sInter_iff],
+  intros t h0 h1,
+  rw normal_is_closed at h0,
+  rw [KΓ, set_Cs],
+  simp only [forall_exists_index, forall_eq_apply_imp_iff', set.sUnion_subset_iff, set.mem_set_of_eq],
+  intro n,
+  induction n with k ih,
+    {
+      rw [C,base,set.union_subset_iff],
+      have h2, exact h0.left,
+      rw set.union_subset_iff at h2,
+      split,
+        {
+          rw set.union_subset_iff,
+          exact ⟨h1,h2.right⟩,
+        },
+      exact h2.left,
+    },
+  rw C,
+  repeat {rw set.union_subset_iff},
+  repeat {split},
+    {exact ih},
+    { 
+      transitivity,
+      apply mp_contain ih,
+      exact h0.right.left,
+    },
+    {
+      transitivity,
+      apply gen_set_contain ih,
+      exact h0.right.right.left,
+    },
+    {
+      transitivity,
+      apply subst_set_contain ih,
+      exact h0.right.right.right,
+    },
+end
+
+/- So, we can now use nl Γs and KΓ Γs interchangebly in 
+our proofs courtesy nls_are_KΓs, and the fact that these
+are normal is given by the definiton of normal logic,
+although a simpler way would be to use nls_are_normal -/
+
+--------------------------------------------------
