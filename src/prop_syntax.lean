@@ -3,6 +3,7 @@ attribute [instance] classical.prop_decidable
 -------------------------------------------------------
 --Syntax for basic propositonal language
 
+/--Propositional formulas-/
 inductive prop_form : Type
 | var : ℕ → prop_form
 | bot : prop_form
@@ -12,6 +13,8 @@ inductive prop_form : Type
 open prop_form
 
  -- Evaluating a propositional formula
+
+/--Evaluating a propositional valuation with respect to a valuation-/
 @[simp]
 def prop_eval (v : ℕ → bool) : prop_form → bool
 | (var n) := (v n)

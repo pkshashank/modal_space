@@ -6,6 +6,7 @@ import normal_logics
 class of frames, the formulas valid on them form a normal 
 logic. -/
 
+/--The set of modal formulas valid on a class of frames-/
 def frame_logic (cl_F : set frames) : set bmod_form := {φ | valid_class φ cl_F }
 
 /-The next lemma states that Dual is valid on every frame -/
@@ -155,7 +156,7 @@ propositional tautologies, and is closed under modus
 ponens, substitution and generalisation is a normal logic 
 (namely the theorem 'normal_is_closed') -/
 
-example {cl_F : set frames} : frame_logic cl_F ∈ normal_logic :=
+lemma frame_logic_is_normal {cl_F : set frames} : frame_logic cl_F ∈ normal_logic :=
 begin
   rw normal_is_closed,
   repeat {split},
