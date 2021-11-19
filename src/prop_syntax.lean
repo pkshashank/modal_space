@@ -27,6 +27,6 @@ def prop_eval (v : ℕ → bool) : prop_form → bool
 def prop_true (φ : prop_form) (v : ℕ → bool) : Prop := prop_eval v φ = tt
 
 -- Defining a propositional tautology
-def prop_taut : set prop_form := { φ | ∀ v, prop_true φ v }
+def prop_taut := { φ | ∀ v, prop_true φ v }
 
 ---------------------------------------------------------

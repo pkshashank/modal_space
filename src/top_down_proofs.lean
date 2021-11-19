@@ -371,3 +371,4 @@ are normal is given by the definiton of normal logic,
 although a simpler way would be to use nls_are_normal -/
 
 --------------------------------------------------
+
