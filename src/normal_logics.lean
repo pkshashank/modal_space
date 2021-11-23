@@ -14,7 +14,7 @@ def subs (var_sub : ℕ → bmod_form) : bmod_form → bmod_form
 
 -- Next, we define a relation between modal formula, namely of being a substitution instance.
 
-def subs_inst : bmod_form → bmod_form → Prop := λ ψ φ, (∃ (v : ℕ → bmod_form), ψ = subs v φ)
+def subs_inst (ψ φ : bmod_form) := ∃ v, ψ = subs v φ
 
 -- As an example, we see that ((□ p 1 ⋁ p 2) ⋀ (! p 3 ⇒ □ p 4)) ⋁ p 5 is a substitution instance of ((p 1 ⋀ p 2) ⋁ p 3).
 --For that we need to show the existence of an appropriate var_sub.
@@ -37,41 +37,98 @@ end
 
 --Next, we define normal modal logics as an inductive type.
 --We first define the modal formulas K and Dual.
-def K : bmod_form := (□ (p 1 ⇒ p 2))⇒ ((□ p 1) ⇒ □ p 2)
-def Dual : bmod_form:= ◇ (p 1) ⇔ ! □ ! p 1
+def K := (□ (p 1 ⇒ p 2)) ⇒ ((□ p 1) ⇒ □ p 2)
+def Dual := ◇ (p 1) ⇔ ! □ ! p 1
 
--- We present some helper definitions.
--- The construction will be bottom up.
--- We will start with a base set and construct the normal logic by taking a closure
--- under needed functions.
+-- Normal Logics.
+@[class]
+inductive KΓ (Γ : set bmod_form) : set bmod_form
+| Γ_cond (φ ∈ Γ) : KΓ φ
+| K_cond : KΓ K
+| Dual_cond : KΓ Dual
+| taut_cond {φ : prop_form} (hptaut : φ ∈ prop_taut) : KΓ φ
+| mp {φ ψ : bmod_form} (hps : KΓ (φ ⇒ ψ)) (hp : KΓ φ) : KΓ ψ
+| subst {φ ψ : bmod_form} (hsub : subs_inst ψ φ) (hp : KΓ φ) : KΓ ψ
+| gen {φ : bmod_form} (hp : KΓ φ) : KΓ (□ φ)
 
--- This will be the starting set
-def base (Γ : set bmod_form) := Γ ∪ prop_taut ∪ {Dual, K}
+/- We have used the bottom up approach to build normal logics.
+The set of all modal formulas form a normal logic -/
+example (all : set bmod_form) (hall : ∀ φ, φ ∈ all) : ∃ Γ , all = KΓ Γ :=
+begin
+  existsi all,
+  rw set.subset.antisymm_iff,
+  split,
+    {
+      intros ψ hsall,
+      exact (@KΓ.Γ_cond all ψ) hsall,
+    },
+    intros ψ hska,
+    exact hall ψ,
+end
 
--- mp_set s is exactly the formulas that can be obtained from s by applying modus ponens to elements in s
-def mp_set (s :  set bmod_form) : set bmod_form := { φ | ∃ φ1 φ2 ∈ s, (φ2 = (φ1 ⇒ φ))}
+/- Arbitrary intersection of normal logics is a normal logic -/
+example (Γs : set (set bmod_form)): (KΓ (⋂ (Γ ∈ Γs), KΓ Γ)) = (⋂ (Γ ∈ Γs), KΓ Γ) :=
+begin
+  rw set.subset.antisymm_iff,
+  split,
+    { simp only [set.subset_Inter_iff],
+      intros Γ hgg φ hpkg,
+      induction hpkg with ψ hsl ψ hstaut ψ1 ψ2 hs12kl hs1kl hs12l
+      hs1l ψ1 ψ2 hsub hs1kl hs1 ψ hskl hsl,
+      {
+        rw set.mem_Inter at hsl,
+        specialize hsl Γ,
+        simp only [set.mem_Inter] at hsl,
+        exact hsl hgg,
+      },
+      exact KΓ.K_cond,
+      exact KΓ.Dual_cond,
+      exact KΓ.taut_cond hstaut,
+      exact KΓ.mp hs12l hs1l,
+      exact KΓ.subst hsub hs1,
+      exact KΓ.gen hsl,
+    },
+    apply KΓ.Γ_cond,
+end
 
--- A similar definition for generalisation
-def gen_set (s : set bmod_form) : set bmod_form := { φ | ∃ ψ ∈ s, (φ = □ ψ) }
+/- Example : The set of all formulas valid on a frame
+is a normal logic -/
+/--The set of modal formulas valid on a class of frames-/
+def frame_logic {W : Type*} (cl_F : set (frames W)): set bmod_form := {φ | valid_class φ cl_F}
 
--- And a similar one for substituion instances
-def subst_set (s : set bmod_form) : set bmod_form := { φ | ∃ ψ ∈ s, subs_inst φ ψ }
-
--- Next, we construct the sets and in the end take the union 
-def C (Γ : set bmod_form) : ℕ → set bmod_form
-| 0 := base Γ 
-| (n + 1) := (C n) ∪ mp_set (C n) ∪ gen_set (C n) ∪ subst_set (C n)
-
--- Once, we have the family, we take its union and define it to be KΓ
--- We do this in two steps, first we make a set containing the family
-def set_Cs (Γ : set bmod_form) : set (set bmod_form) := { D | ∃ n, D = C Γ n }
-
--- Finally we take the union on this set containing the family to obtain the normal logic KΓ
-def KΓ (Γ : set bmod_form) := ⋃₀ set_Cs Γ
-
--- All such KΓs are normal logics
-def normal_logic : set (set bmod_form) := { N | ∃ Γ, N = KΓ Γ }
-
+example {W : Type*} (cl_F : set (frames W)) : frame_logic cl_F = KΓ (frame_logic cl_F):=
+begin
+  rw set.subset.antisymm_iff,
+  split,
+  exact KΓ.Γ_cond,
+  intros φ hpkfl,
+  rw [frame_logic, set.mem_set_of_eq, valid_class],
+  intros F hfcl,
+  induction hpkfl with ψ hsl ψ hstaut ψ1 ψ2 hs12kl hs1kl hs12l
+  hs1l ψ1 ψ2 hsub hs1kl hs1 ψ hskl hsl,
+    {
+      rw [frame_logic, set.mem_set_of_eq, valid_class] at hsl,
+      exact hsl F hfcl,
+    },
+    {
+      rw [K, valid],
+      intros val w,
+      simp only [not_exists, exists_prop, tr, not_and, not_not],
+      intros h12 hw1 x hrwx,
+      exact h12 x hrwx (hw1 x hrwx),
+    },
+    {
+      rw [Dual, valid],
+      intros val w,
+      simp only [not_exists, and_imp, exists_prop, forall_exists_index, tr, not_and, not_not, and_self, not_forall],
+      intros x hrwx h1,
+      exact ⟨x,hrwx,h1⟩,
+    },
+    have hpt, from val_prop_taut ψ cl_F hstaut,
+    rw [valid_class] at hpt,
+    exact hpt F hfcl,
+end
+/-
 --Next, we have some examples, but before that we need a helper lemma to use in one of our examples.
 lemma gam_sub_normal : ∀ (Γ : set bmod_form), Γ ⊆ KΓ Γ :=
 begin
@@ -413,3 +470,5 @@ end
 
 /- The above theorem gives an easy way to prove that the set of 
 all modal formulas is a normal logic. -/
+
+-/
