@@ -1,64 +1,81 @@
-import top_down_proofs
+import normal_logics
 
------------------------------------------------
-/- Soundness -/
-def sound (log : set bmod_form) (cl : set frames) := log ∈ normal_logic ∧ log ⊆ frame_logic cl
+-----------------------------------------------------
+/-Soundness-/
 
-/- The logic K is sound with respect to all class of frames -/
-example (cl : set frames) : sound (nl ∅) cl :=
+def sound {W : Type*} (Γ : set bmod_form) (cl : set (frames W)) := 
+Γ ⊆ frame_logic cl
+
+/- Note: Although in the literature the notion of soundess is only 
+defined for normal logics, but I can't see how to do it here.
+So here, soundness is a concept defined for all set of formulas. 
+Likewise for completeness. -/
+
+/- We prove K is sound with respect to any class of frames, and 
+hence with respect to all class of frames. Before that we prove a 
+lemma which will help us use frame_logic_normal for that result. -/
+
+lemma subset_lift_normal_logic (Γ1 Γ2 : set bmod_form) (hgsub : Γ1 ⊆ Γ2) : KΓ Γ1 ⊆ KΓ Γ2 :=
 begin
-  rw sound,
-  split,
-    exact nls_are_normal ∅,
-    rw [frame_logic, nls_are_KΓs, KΓ, set_Cs],
-    simp only [forall_exists_index, forall_eq_apply_imp_iff', set.sUnion_subset_iff, set.mem_set_of_eq],
-    intros n,
-    induction n with k ih,
-      {
-        rw [C,base],
-        simp only [set.empty_union, set.union_singleton,set.union_subset_iff],
-        split,
-          {
-            have h1, from val_prop_taut,
-            intros ψ h2,
-            simp only [set.mem_set_of_eq],
-            cases h2 with φ h2,
-            specialize h1 φ cl h2.left,
-            convert h1,
-            rw ←h2.right,
-            refl,
-          },
-          intros φ h0,
-          simp only [set.mem_insert_iff, set.mem_singleton_iff, set.mem_set_of_eq] at h0 ⊢,
-          cases h0,
-          all_goals {rw h0, rw valid_class, intros F h1},
-          exact val_dual F,
-          exact val_K F,
-      },
-    rw ←frame_logic at ih ⊢,
-    have h0, from @frame_logic_is_normal cl,
-    rw normal_is_closed at h0,
-    rw C,
-    repeat {rw set.union_subset_iff, split},
-    exact ih,
-      {
-        have h1, from mp_contain ih,
-        intros φ h2,
-        exact h0.right.left (h1 h2),
-      },
-      {
-        have h1, from gen_set_contain ih,
-        intros φ h2,
-        exact h0.right.right.left (h1 h2),
-      },
-      {
-        have h1, from subst_set_contain ih,
-        intros φ h2,
-        exact h0.right.right.right (h1 h2),
-      },
+  intros φ hpg1,
+  induction hpg1 with ψ hsl ψ hstaut ψ1 ψ2 hs12kl hs1kl hs12l
+  hs1l ψ1 ψ2 hsub hs1kl hs1 ψ hskl hsl,
+  exact KΓ.Γ_cond ψ (hgsub hsl),
+  exact KΓ.K_cond,
+  exact KΓ.Dual_cond,
+  exact KΓ.taut_cond hstaut,
+  exact KΓ.mp hs12l hs1l,
+  exact KΓ.subst hsub hs1,
+  exact KΓ.gen hsl,
 end
 
-/- Completeness -/
-def complete (log : set bmod_form) (cl : set frames) := log ∈ normal_logic ∧ frame_logic cl ⊆ log
+example {W : Type*} (cl : set (frames W)) : sound K cl :=
+begin
+  rw [sound, K, frame_logic_normal],
+  apply subset_lift_normal_logic,
+  simp only [set.empty_subset],
+end
 
--- We postpone the completeness proofs till needed.
+/- Next result says that S4 is sound on the class of all reflexive
+transitive frames -/
+
+def refl_trans_cl (W : Type*) : set (frames W) :=
+{F | transitive F.R ∧ reflexive F.R}
+
+example {W : Type*} : sound S4 (refl_trans_cl W) :=
+begin
+  rw [sound, S4, frame_logic_normal],
+  apply subset_lift_normal_logic,
+  -- Reduces to proving that the extra axioms are valid
+  -- as validity preservation under operations and other axioms
+  -- have already been taken care of.
+  intros φ hpt4,
+  simp only [set.mem_insert_iff, set.mem_singleton_iff] at hpt4,
+  cases hpt4,
+    {
+      rw [hpt4, frame_logic, set.mem_set_of_eq, Ax_T, valid_class],
+      intros F hfcl,
+      rw valid,
+      intros val w,
+      set M := @model.mk _ F val with hm,
+      simp only [not_exists, exists_prop, tr, not_and, not_not, not_forall, ←hm],
+      intros hp1w,
+      rw [refl_trans_cl, set.mem_set_of_eq, reflexive] at hfcl,
+      exact ⟨w, hfcl.right w, hp1w⟩,
+    },
+    rw [hpt4, frame_logic, set.mem_set_of_eq, Ax_4, valid_class],
+    intros F hfcl,
+    rw valid,
+    intros val w,
+    simp only [and_imp, forall_exists_index, tr, not_and, not_not],
+    intros u hrwu v hruv hvp1,
+    rw [refl_trans_cl, set.mem_set_of_eq, transitive] at hfcl,
+    exact ⟨v, hfcl.left hrwu hruv, hvp1⟩,
+end
+
+-------------------------------------------------------------
+/- Completeness -/
+def complete {W : Type*} (Γ : set bmod_form) (cl : set (frames W)) := 
+frame_logic cl ⊆ Γ
+
+-- We postpone completeness proofs till needed.
