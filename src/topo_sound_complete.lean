@@ -109,7 +109,7 @@ begin
 end
 
 /- The next result is S4 is sound with respect to the class of all topological spaces -/
-lemma S4_sound_all {X : Type*} (all : set (topological_space X)) (hall :  ∀ T, T ∈ all) : tsound S4 all :=
+lemma S4_sound_any {X : Type*} (any : set (topological_space X)) : tsound S4 any :=
 begin
   rw [tsound, S4, top_class_logic_normal],
   apply subset_lift_normal_logic,
