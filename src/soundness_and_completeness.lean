@@ -12,22 +12,7 @@ So here, soundness is a concept defined for all set of formulas.
 Likewise for completeness. -/
 
 /- We prove K is sound with respect to any class of frames, and 
-hence with respect to all class of frames. Before that we prove a 
-lemma which will help us use frame_logic_normal for that result. -/
-
-lemma subset_lift_normal_logic (Γ1 Γ2 : set bmod_form) (hgsub : Γ1 ⊆ Γ2) : KΓ Γ1 ⊆ KΓ Γ2 :=
-begin
-  intros φ hpg1,
-  induction hpg1 with ψ hsl ψ hstaut ψ1 ψ2 hs12kl hs1kl hs12l
-  hs1l ψ1 ψ2 hsub hs1kl hs1 ψ hskl hsl,
-  exact KΓ.Γ_cond ψ (hgsub hsl),
-  exact KΓ.K_cond,
-  exact KΓ.Dual_cond,
-  exact KΓ.taut_cond hstaut,
-  exact KΓ.mp hs12l hs1l,
-  exact KΓ.subst hsub hs1,
-  exact KΓ.gen hsl,
-end
+hence with respect to all class of frames. -/
 
 example {W : Type*} (cl : set (frames W)) : sound K cl :=
 begin
