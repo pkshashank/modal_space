@@ -67,31 +67,99 @@ noncomputable def del {α : Type*} (a : α): list α → list α
 noncomputable def headed_list {α : Type*} (as : list α) (a : α) (hal : a ∈ as) :
 list α := [a] ++ del a as
 
+/- This lemma is helpful in using and_lists, and making assertions about truth -/
+lemma val_head_list (l: list prop_form) (a : prop_form) (v: ℕ → bool) :
+prop_eval v a = tt → prop_eval v (& del a l) = tt → prop_eval v (& l) = tt :=
+begin
+  induction l with b bl hyp,
+    {
+      rw and_list_pfs,
+      simp only [implies_true_iff, eq_self_iff_true, prop_eval, bool.bnot_false],
+    },
+  intros ha hda,
+  rw del at hda,
+  rw and_list_pfs,
+  simp only [band_eq_true_eq_eq_tt_and_eq_tt, prop_eval],
+  specialize hyp ha,
+  split_ifs at hda,
+    {
+      rw [h, ha],
+      simp only [true_and, eq_self_iff_true],
+      exact hyp hda,
+    },
+  rw and_list_pfs at hda,
+  simp only [band_eq_true_eq_eq_tt_and_eq_tt, prop_eval] at hda,
+  exact ⟨hda.1, hyp hda.2⟩,
+end
+
 /- For a list l of propositional formulas, if lp is a headed list,
 the (&l ⇒' ⊥) ⇒' (&lp ⇒' ⊥) is a propositional tautology -/
-lemma lem (l : list prop_form) (a : prop_form) (hal : a ∈ l) :
+lemma headed_taut (l : list prop_form) (a : prop_form) (hal : a ∈ l):
 ((&l ⇒' ⊥') ⇒' (& (headed_list l a hal) ⇒' ⊥')) ∈ prop_taut :=
 begin
   rw prop_taut,
   simp only [set.mem_set_of_eq],
   intro v,
   rw prop_true,
-  simp only [bnot_eq_true_eq_eq_ff, bool.bnot_band, prop_eval, bool.bnot_false, 
+  simp only [bnot_eq_true_eq_eq_ff, bool.bnot_band, prop_eval, 
+  bool.bnot_false, 
   bnot_bnot, band_tt, bor_eq_true_eq_eq_tt_or_eq_tt],
-  induction l with b bl hyp,
-    {
-      exfalso,
-      simp only [list.not_mem_nil] at hal,
-      exact hal,
+  rw headed_list,
+  simp only [list.singleton_append],
+  rw and_list_pfs,
+  simp only [prop_eval, band_eq_false_eq_eq_ff_or_eq_ff],
+  cases hl : prop_eval v (&l),
+    { 
+      apply or.intro_right, -- prop_eval v (&l) = ff
+      cases ha : prop_eval v a,  
+      apply or.intro_left, refl,
+      apply or.intro_right, -- prop_eval v a = tt
+      by_contra,
+      simp only [eq_tt_eq_not_eq_ff] at h,
+      have hff := val_head_list l a v ha h,
+      rw hl at hff,
+      simp only at hff,
+      assumption,
     },
-  simp only [list.mem_cons_iff] at hal,
-  cases hal with hab habl,
-    {
-      sorry,
-    },
-  sorry,
+  apply or.intro_left,
+  refl,
 end
 
+/- A list of propositional formulas of the form [p0, p1, ...] of a 
+given length n -/
+def list_pns : ℕ → list prop_form
+| 0 := []
+| (n + 1) := p'(n) :: list_pns n
+
+/- p' 0 is in a nonempty list -/
+lemma pz_in_nonempty_list {n : ℕ} (hnz: n > 0) : p' 0 ∈ list_pns n :=
+begin
+  induction n with k ih,
+  {
+    simp only [nat.not_lt_zero, gt_iff_lt] at hnz,
+    contradiction,
+  },
+  rw list_pns,
+  simp only [list.mem_cons_iff],
+  have hk :  0 = k ∨ k > 0,
+    {
+      omega,
+    },
+  cases hk,
+  apply or.intro_left, assumption,
+  apply or.intro_right, exact ih hk,
+end
+
+/- Non-empty lists have positive lengths -/
+lemma nonemp_list_pos_len {α : Type*} (a : α) (l : list α) (hal : a ∈ l) : l.length > 0 :=
+begin
+  revert a,
+  induction l with b hl hyp,
+  intros a hal,
+  simp only [list.not_mem_nil] at hal, contradiction,
+  intros a habl,
+  simp only [nat.succ_pos', gt_iff_lt, list.length],
+end
 
 /-Properties of MCSs-/
 lemma gamm_union_cons (Γ Λ: set bmod_form) (hng: ∃ (A : set bmod_form), Λ = KΓ A) 
@@ -122,7 +190,9 @@ begin
     exact hbinc hcons,
     },
   rw ←in_list_eqv at hsb,
-  let B' := headed_list B ψ hsb,
+  let B' := headed_list B ψ hsb, -- need to prove (&B ⇒ ⊥) ⇒ (&B' ⇒ ⊥) ∈ Λ
+  let P := list_pns B.length,
+  have hPl := headed_taut P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
   sorry,
 end
 
