@@ -1,5 +1,6 @@
 import prop_syntax
 set_option pp.coercions false
+
 ---------------------------------------------------
 
 -- Syntax of the basic modal language
@@ -13,11 +14,11 @@ inductive bmod_form : Type
 open bmod_form
 
 --Notations
-notation `⊥` := bot
-notation `!` φ := neg φ
-notation `p` := var
+notation `⊥` := bmod_form.bot
+notation `!` φ := bmod_form.neg φ
+notation `p` := bmod_form.var
 notation φ ` ⋀ ` ψ  := bmod_form.and φ ψ
-notation `◇` φ := dia φ
+notation `◇` φ := bmod_form.dia φ
 
 -- Common Abbreviations
 notation φ ` ⋁ ` ψ := !(!φ ⋀ !ψ)

@@ -6,7 +6,7 @@ def list_to_set {α : Type*} : list α → set α
 | [] := ∅
 | (a :: l) := {a} ∪ list_to_set l
 
-instance {α : Type*} : has_coe (list α) (set α) :=
+instance list_coe_set {α : Type*} : has_coe (list α) (set α) :=
 ⟨list_to_set⟩
 
 instance {α β : Type*} [has_coe α β] : has_coe (list α) (list β) :=
@@ -39,7 +39,7 @@ end
 
 /-Definintion of Γ being Λ-consistent-/
 def consistent (Γ Λ : set bmod_form) := ¬ ∃ (B : list bmod_form),
-↑B ⊆ Γ ∧ ((& B) ⇒ ⊥) ∉ Λ
+↑B ⊆ Γ ∧ ((& B) ⇒ ⊥) ∈ Λ
 
 /-Definition of Γ being maximally Λ-consistent (MCS)-/
 def mcs (Γ Λ : set bmod_form) := consistent Γ Λ ∧ ¬ ∃
@@ -65,7 +65,7 @@ noncomputable def del {α : Type*} (a : α): list α → list α
 
 /- This concatenates the deleted variable in the front-/
 noncomputable def headed_list {α : Type*} (as : list α) (a : α) (hal : a ∈ as) :
-list α := [a] ++ del a as
+list α := a :: del a as
 
 /- This lemma is helpful in using and_lists, and making assertions about truth -/
 lemma val_head_list (l: list prop_form) (a : prop_form) (v: ℕ → bool) :
@@ -105,7 +105,6 @@ begin
   bool.bnot_false, 
   bnot_bnot, band_tt, bor_eq_true_eq_eq_tt_or_eq_tt],
   rw headed_list,
-  simp only [list.singleton_append],
   rw and_list_pfs,
   simp only [prop_eval, band_eq_false_eq_eq_ff_or_eq_ff],
   cases hl : prop_eval v (&l),
@@ -151,7 +150,8 @@ begin
 end
 
 /- Non-empty lists have positive lengths -/
-lemma nonemp_list_pos_len {α : Type*} (a : α) (l : list α) (hal : a ∈ l) : l.length > 0 :=
+lemma nonemp_list_pos_len {α : Type*} (a : α) (l : list α)
+(hal : a ∈ l) : l.length > 0 :=
 begin
   revert a,
   induction l with b hl hyp,
@@ -161,7 +161,80 @@ begin
   simp only [nat.succ_pos', gt_iff_lt, list.length],
 end
 
-/-Properties of MCSs-/
+/- A propositional tautology that will be used later -/
+lemma needed_taut : (((p' 0 ⋀' p' 1) ⇒' ⊥') ⇒'
+((p' 2 ⋀' ((p' 2 ⇒' p' 0) ⋀' p' 1)) ⇒' ⊥')) ∈ prop_taut :=
+begin
+  rw [prop_taut, set.mem_set_of_eq],
+  intro v,
+  rw prop_true,
+  simp only [bnot_eq_true_eq_eq_ff, band_eq_true_eq_eq_tt_and_eq_tt, bool.bnot_band,
+  bool.bnot_bor, prop_eval, bool.bnot_false, bool.band_assoc, bnot_bnot,
+  band_tt, bor_eq_true_eq_eq_tt_or_eq_tt],
+  cases h0 : v 0,
+  cases h1 : v 1,
+  cases h2 : v 2,
+  simp only [false_or, false_and, or_self],
+  simp only [false_or, eq_self_iff_true, and_self, or_self],
+  simp only [and_true, false_or, eq_self_iff_true, or_false],
+  cases v 2,
+  simp only [or_false],
+  simp only [false_or],
+  simp only [true_and, false_or, eq_self_iff_true, and_false],
+  cases v 1,
+  simp only [eq_self_iff_true, or_true],
+  simp only [true_or, eq_self_iff_true],
+end
+
+noncomputable def needed_sub (φ ψ Φ : bmod_form) (n : ℕ) : bmod_form :=
+match n with
+| 0 := ψ
+| 1 := Φ
+| 2 := φ
+| _ := ⊥
+end
+
+/- A needed substitution instance -/
+lemma needed_subs_inst (φ ψ Φ : bmod_form) : subs_inst
+(((ψ ⋀ Φ) ⇒ ⊥) ⇒ ((φ ⋀ ((φ ⇒ ψ) ⋀ Φ)) ⇒ ⊥))
+(((p' 0 ⋀' p' 1) ⇒' ⊥') ⇒' ((p' 2 ⋀' ((p' 2 ⇒' p' 0) ⋀' p' 1)) ⇒' ⊥')) :=
+begin
+  simp only,
+  rw subs_inst,
+  existsi needed_sub φ ψ Φ,
+  unfold_coes,
+  simp only [and_true, and_self_left, subs, eq_self_iff_true],
+  repeat {split},
+  repeat {unfold needed_sub},
+end
+
+/- A needed lemma -/
+lemma ppmsib_in_gam {φ ψ Φ : bmod_form} (Γ : set bmod_form)
+(hcond : ((ψ ⋀ Φ) ⇒ ⊥) ∈ KΓ Γ) : ((φ ⋀ ((φ ⇒ ψ) ⋀ Φ)) ⇒ ⊥) ∈ KΓ Γ :=
+begin
+  simp only at *,
+  apply KΓ.mp,
+  apply KΓ.subst,
+  exact needed_subs_inst φ ψ Φ,
+  apply KΓ.taut_cond,
+  exact needed_taut,
+  exact hcond,
+end
+
+/- A lemma about list containment in sets, as sets -/
+lemma list_in_set {α : Type*} (a : α) (l : list α) (A : set α)
+: ↑(a :: l) ⊆ A ↔ ((↑l ⊆ A) ∧ (a ∈ A)) :=
+begin
+  sorry,
+end
+
+lemma lem (B : list bmod_form) (Γ : set bmod_form) (ψ : bmod_form) (hsb : ψ ∈ B)
+(hbg : ↑B ⊆ Γ ∪ {ψ}) : ↑(headed_list B ψ hsb).tail ⊆ Γ :=
+begin
+  sorry,
+end
+
+/-A lemma which is the meat of the next proof-/
 lemma gamm_union_cons (Γ Λ: set bmod_form) (hng: ∃ (A : set bmod_form), Λ = KΓ A) 
 (hlmcs: mcs Γ Λ) (φ ψ: bmod_form) (hpg: φ ∈ Γ) (hpmsg: (φ ⇒ ψ) ∈ Γ) :
 consistent (Γ ∪ {ψ}) Λ :=
@@ -183,19 +256,59 @@ begin
           rw hbgs at hχb,
           exact h hχb,
         },
-    cases hlmcs with hcons hneg,
-    rw consistent at hcons,
-    simp only [not_exists, not_and, set.not_not_mem] at hcons,
-    specialize hcons B hbg,
-    exact hbinc hcons,
+      cases hlmcs with hcons hneg,
+      rw consistent at hcons,
+      simp only [not_exists, not_and, set.not_not_mem] at hcons,
+      specialize hcons B hbg,
+      contradiction,
     },
   rw ←in_list_eqv at hsb,
   let B' := headed_list B ψ hsb, -- need to prove (&B ⇒ ⊥) ⇒ (&B' ⇒ ⊥) ∈ Λ
   let P := list_pns B.length,
-  have hPl := headed_taut P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
+  have hpl := headed_taut P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
+  rcases hng with ⟨A, hla⟩,
+  set P' := headed_list P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
+  have hplg := @KΓ.taut_cond A _ hpl,
+  set pform : bmod_form := ↑((& P ⇒' ⊥') ⇒' (& P' ⇒' ⊥')),
+  set bform : bmod_form := (((& B) ⇒ ⊥) ⇒ ((& B') ⇒ ⊥)),
+  suffices hsub : subs_inst bform pform,
+    {
+      have hbfg := KΓ.subst hsub hplg,
+      rw hla at hbinc,
+      have headlis_gamm :((& B') ⇒ ⊥) ∈ KΓ A, exact KΓ.mp hbfg hbinc,
+      set Φ := & list.tail (B'),
+      have b'cond : (& B') = (ψ ⋀ Φ), refl,
+      rw b'cond at headlis_gamm,
+      simp only at headlis_gamm,
+      have hgcons := hlmcs.1,
+      rw consistent at hgcons,
+      simp only [not_exists, not_and] at hgcons,
+      set pmslist := φ :: (φ ⇒ ψ) :: list.tail B',
+      specialize hgcons pmslist,
+      suffices hpm_in_gamm : ↑pmslist ⊆ Γ,
+        {
+          specialize hgcons hpm_in_gamm,
+          have hlΦ : (& pmslist) = (φ ⋀ ((φ ⇒ ψ) ⋀ Φ)), refl,
+          rw hlΦ at hgcons,
+          simp only at hgcons,
+          simp only at hlΦ,
+          rw hla at hgcons,
+          have hend := @ppmsib_in_gam φ _ _ A headlis_gamm,
+          simp only at hend,
+          exact hgcons hend,
+        },
+      apply (list_in_set φ ((φ ⇒ ψ) :: B'.tail) Γ).mpr,
+      rw and.comm,
+      apply and.intro hpg,
+      apply (list_in_set (φ ⇒ ψ) B'.tail Γ).mpr,
+      rw and.comm,
+      apply and.intro hpmsg,
+      sorry,
+    },
   sorry,
 end
 
+/-Properties of MCSs-/
 theorem mcs_preserve_mp (Γ Λ: set bmod_form) (hng : ∃ A, Λ = KΓ A)
 (hlmcs : mcs Γ Λ) (φ ψ : bmod_form) (hpg : φ ∈ Γ) (hpmsg : (φ ⇒ ψ) ∈ Γ) :
 ψ ∈ Γ :=

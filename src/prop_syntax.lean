@@ -12,18 +12,17 @@ inductive prop_form : Type
 
 open prop_form
 
-notation `⊥' ` := bot
-notation `!' ` φ := neg φ
-notation `p' ` := var
-notation φ ` ⋀' ` ψ  := and φ ψ
+notation `⊥' ` := prop_form.bot
+notation `!' ` φ := prop_form.neg φ
+notation `p' ` := prop_form.var
+notation φ ` ⋀' ` ψ  := prop_form.and φ ψ
 
 -- Common Abbreviations
 notation φ ` ⋁' ` ψ := !'(!'φ ⋀' !'ψ)
 notation φ ` ⇒' ` ψ := (!'φ) ⋁' ψ
 notation φ ` ⇔' ` ψ := (φ ⇒' ψ) ⋀' (ψ ⇒' φ)
 
-
- -- Evaluating a propositional formula
+-- Evaluating a propositional formula
 
 /--Evaluating a propositional valuation with respect to a valuation-/
 @[simp]
