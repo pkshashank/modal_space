@@ -222,16 +222,79 @@ begin
 end
 
 /- A lemma about list containment in sets, as sets -/
-lemma list_in_set {α : Type*} (a : α) (l : list α) (A : set α)
+lemma list_in_set_eqv {α : Type*} (a : α) (l : list α) (A : set α)
 : ↑(a :: l) ⊆ A ↔ ((↑l ⊆ A) ∧ (a ∈ A)) :=
 begin
-  sorry,
+  split,
+    {
+      intros ha,
+      split,
+        {
+          intros b hbl,
+          have hb : b ∈ ↑(a :: l),
+            {
+              refine (in_list_eqv (a :: l) b).mp _,
+              refine (list.mem_cons_iff b a l).mpr _,
+              apply or.intro_right,
+              exact (in_list_eqv l b).mpr hbl,
+            },
+          exact ha hb,
+        },
+      apply ha,
+      exact set.mem_insert a (list_to_set l),
+    },
+  intros hla c hcal,
+  cases hcal,
+    {
+      simp only [set.mem_singleton_iff] at hcal,
+      rw hcal,
+      exact hla.2,
+    },
+  apply hla.1,
+  exact hcal,
 end
 
-lemma lem (B : list bmod_form) (Γ : set bmod_form) (ψ : bmod_form) (hsb : ψ ∈ B)
+/- The deleted formula doesn't occur in the tail -/
+lemma not_in_tail (A : list bmod_form) (Γ : set bmod_form) (ψ : bmod_form) (hag : ↑A ⊆ Γ ∪ {ψ})
+: ↑(del ψ A) ⊆ Γ :=
+begin
+  induction A with b bl hyp,
+    {
+      rw del,
+      exact set.empty_subset Γ,
+    },
+  rw del,
+  have hbsubbl : (↑bl : set bmod_form) ⊆ ↑(b :: bl), exact set.subset_insert b ↑bl,
+  split_ifs,
+    {
+      apply hyp,
+      transitivity,
+      exact hbsubbl,
+      exact hag,
+    },
+  refine (list_in_set_eqv b (del ψ bl) Γ).mpr _,
+  split,
+    {
+      apply hyp,
+      transitivity,
+      exact hbsubbl,
+      exact hag,
+    },
+  have hb : b ∈ ↑(b :: bl), exact set.mem_insert b (list_to_set bl),
+  specialize hag hb,
+  cases hag,
+  exact hag,
+  simp only [set.mem_singleton_iff] at hag,
+  contradiction,
+end
+
+/- The same lemma as above but in a more usable form -/
+lemma headed_list_tail (B : list bmod_form) (Γ : set bmod_form) (ψ : bmod_form) (hsb : ψ ∈ B) 
 (hbg : ↑B ⊆ Γ ∪ {ψ}) : ↑(headed_list B ψ hsb).tail ⊆ Γ :=
 begin
-  sorry,
+  rw [headed_list, list.tail],
+  apply not_in_tail,
+  exact hbg,
 end
 
 /-A lemma which is the meat of the next proof-/
@@ -297,13 +360,13 @@ begin
           simp only at hend,
           exact hgcons hend,
         },
-      apply (list_in_set φ ((φ ⇒ ψ) :: B'.tail) Γ).mpr,
+      apply (list_in_set_eqv φ ((φ ⇒ ψ) :: B'.tail) Γ).mpr,
       rw and.comm,
       apply and.intro hpg,
-      apply (list_in_set (φ ⇒ ψ) B'.tail Γ).mpr,
+      apply (list_in_set_eqv (φ ⇒ ψ) B'.tail Γ).mpr,
       rw and.comm,
       apply and.intro hpmsg,
-      sorry,
+      refine headed_list_tail _ _ _ _ hbgs,
     },
   sorry,
 end
