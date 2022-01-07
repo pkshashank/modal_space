@@ -130,35 +130,40 @@ def list_pns : ℕ → list prop_form
 | 0 := []
 | (n + 1) := p'(n) :: list_pns n
 
-/- p' 0 is in a nonempty list -/
-lemma pz_in_nonempty_list {n : ℕ} (hnz: n > 0) : p' 0 ∈ list_pns n :=
+/- Every p lesser than the length of list_pns is in it -/
+lemma less_than_in_pns (B : list bmod_form) (n : ℕ) (hn : n < B.length) : p' n ∈ list_pns B.length :=
 begin
-  induction n with k ih,
+ induction B with b bl hyp,
   {
-    simp only [nat.not_lt_zero, gt_iff_lt] at hnz,
+    simp only [nat.not_lt_zero, list.length] at hn,
     contradiction,
   },
-  rw list_pns,
+  simp only [list.length] at hn,
+  rw [list.length, list_pns],
   simp only [list.mem_cons_iff],
-  have hk :  0 = k ∨ k > 0,
+  have hneq : n = bl.length ∨ n < bl.length, omega,
+  cases hneq,
     {
-      omega,
+      apply or.intro_left,
+      exact hneq,
     },
-  cases hk,
-  apply or.intro_left, assumption,
-  apply or.intro_right, exact ih hk,
+  apply or.intro_right,
+  exact hyp hneq,
 end
 
-/- Non-empty lists have positive lengths -/
-lemma nonemp_list_pos_len {α : Type*} (a : α) (l : list α)
-(hal : a ∈ l) : l.length > 0 :=
+/- The index corresponding to ψ in in list_pns -/
+lemma index_formula_in_prop_list (B : list bmod_form) (ψ : bmod_form) (hs : ψ ∈ B) : p' (B.length - B.index_of ψ - 1) ∈ list_pns B.length :=
 begin
-  revert a,
-  induction l with b hl hyp,
-  intros a hal,
-  simp only [list.not_mem_nil] at hal, contradiction,
-  intros a habl,
-  simp only [nat.succ_pos', gt_iff_lt, list.length],
+  apply less_than_in_pns,
+  induction B with b bl hyp,
+    {
+      simp only [list.not_mem_nil] at hs,
+      contradiction,
+    },
+  rw [list.length, list.index_of, list.find_index],
+  split_ifs,
+  simp only [tsub_zero, nat.add_succ_sub_one, add_zero, lt_add_iff_pos_right, nat.lt_one_iff],
+  omega,
 end
 
 /- A propositional tautology that will be used later -/
@@ -297,6 +302,197 @@ begin
   exact hbg,
 end
 
+/- A substitution function that will be used to prove that bform is a substituiton
+instance of pform -/
+def subs_bform_pform (B : list bmod_form) (n : ℕ) : bmod_form :=
+match B.nth (B.length - n - 1) with
+| (some ψ) := ψ
+| none := ⊥
+end
+
+/- The substitution is same for the initial part of the list -/
+lemma subs_bform_list_ext (B : list bmod_form) (φ : bmod_form) (n : ℕ) (hn : n < B.length):
+subs_bform_pform B n = subs_bform_pform (φ :: B) n :=
+begin
+  repeat {rw subs_bform_pform},
+  rw list.length,
+  have hcom : B.length + 1 - n - 1 = (B.length - n - 1) + 1, omega,
+  rw [hcom, list.nth],
+end
+
+/- For small list_pns, subs_bform_pform is the same -/
+lemma subs_bform_list_pns (B : list bmod_form) (φ : bmod_form) (n : ℕ) (hn : n ≤ B.length) :
+subs (subs_bform_pform B) (& ↑(list_pns n)) = subs (subs_bform_pform (φ :: B)) (& ↑(list_pns n)) :=
+begin
+  have hpcoe : ∀ k, p k :: list_pns k = ↑(p' k :: list_pns k),
+    {
+      intro k, refl,
+    },
+  induction n with k ih,
+  refl,
+  rw [list_pns, ← hpcoe k, and_list_bmods],
+  simp only [subs],
+  split,
+    { 
+      apply subs_bform_list_ext,
+      exact hn,
+    },
+  have hk : k ≤ B.length, exact le_of_lt hn,
+  specialize ih hk,
+  exact ih,
+end
+
+/- Every and-ed list of modal formulas is a substitution instance
+of an and-ed list of propositional formulas. -/
+lemma and_list_subs_and_props (B : list bmod_form) (P : list prop_form) (hp : P = list_pns B.length) :
+(& B) = subs (subs_bform_pform B) (& ↑P) :=
+begin
+  revert P,
+  induction B with b bl hyp,
+    {
+      intros P hp,
+      simp only [list.length] at hp,
+      have hnil : P = [],
+        {
+          rw hp,
+          refl,
+        },
+      rw hnil,
+      refl,
+    },
+  intros P hp,
+  rw and_list_bmods,
+  rw [list.length, list_pns] at hp,
+  rw hp,
+  have hplist : ↑(p' bl.length :: list_pns bl.length) =
+  ( (p bl.length ) :: ((↑ (list_pns bl.length)) : list bmod_form )), refl,
+  rw [hplist, and_list_bmods],
+  simp only [subs],
+  split,
+    {
+      rw [subs_bform_pform, list.length],
+      have hcanc : bl.length + 1 - bl.length - 1 = 0, omega,
+      rw hcanc,
+      refl,
+    },
+  specialize hyp (list_pns bl.length) rfl,
+  rw hyp,
+  apply subs_bform_list_pns, refl,
+end
+
+/- A helper for the next one -/
+lemma subs_list_index (B : list bmod_form) (ψ : bmod_form) (hsb : ψ ∈ B) : ψ = subs_bform_pform B (B.length - list.index_of ψ B - 1) :=
+begin
+  induction B with b bl hyp,
+  simp only [list.not_mem_nil] at hsb, contradiction,
+  simp only [list.mem_cons_iff] at hsb,
+  cases hsb with hinb hsbl,
+    {
+      rw hinb,
+      simp only [tsub_zero, nat.add_succ_sub_one, add_zero, list.length, list.index_of_cons_self],
+      rw subs_bform_pform,
+      simp only [add_tsub_cancel_left, list.length, list.nth],
+      refl,
+    },
+  specialize hyp hsbl,
+  simp only [list.length],
+  rw [list.index_of, list.find_index],
+  split_ifs,
+    {
+      rw h,
+      simp only [tsub_zero, nat.add_succ_sub_one, add_zero],
+      rw subs_bform_pform,
+      simp only [add_tsub_cancel_left, list.length, list.nth],
+      refl,
+    },
+  simp only [nat.succ_sub_succ_eq_sub],
+  have hll : list.index_of ψ bl = list.find_index (eq ψ) bl,
+  refl,
+  rw ←hll,
+  set N := bl.length - list.index_of ψ bl - 1 with hn,
+  rw hyp,
+  apply subs_bform_list_ext,
+  rw hn,
+  have hbnil : bl ≠ [],
+    {
+      by_contra,
+      rw h at hsbl,
+      simp only [list.not_mem_nil] at hsbl,
+      contradiction,
+    },
+  have hblen : bl.length > 0,
+    {
+      cases bl with b cl,
+      simp only [eq_self_iff_true, not_true, ne.def] at hbnil, contradiction,
+      simp only [nat.succ_pos', gt_iff_lt, list.length],
+    },
+  omega,
+end
+
+lemma subs_headed_list (B B' : list bmod_form) (P P' : list prop_form)
+(ψ : bmod_form) (hsb : ψ ∈ B) (hb : B' = headed_list B ψ hsb) 
+(hpdash : P' = headed_list (list_pns B.length) (p' (B.length - B.index_of ψ - 1)) (index_formula_in_prop_list B ψ hsb)) :
+(& B') = subs (subs_bform_pform B) (& ↑P') :=
+begin
+  have hpcoe : ∀ k (l : list prop_form), ↑(p' k :: l) = (p k) :: (↑l : list bmod_form),
+    {
+      intros k l, refl,
+    },
+  induction B with b bl hyp,
+    {
+      simp only [list.not_mem_nil] at hsb,
+      contradiction,
+    },
+  rw hb,
+  rw headed_list,
+  rw and_list_bmods,
+  rw hpdash,
+  rw headed_list,
+  rw hpcoe,
+  rw and_list_bmods,
+  simp only [list.length, subs],
+  split,
+    {
+      apply subs_list_index,
+      exact hsb,
+    },
+  sorry,
+end
+
+/- A helper lemma about substitution -/
+lemma final_subs (B B' : list bmod_form) (P P' : list prop_form)
+(ψ : bmod_form) (hsb : ψ ∈ B) (hb : B' = headed_list B ψ hsb)
+(hp : P = list_pns B.length) (hpdash : P' = (headed_list (list_pns B.length) (p' (B.length - B.index_of ψ - 1)) (index_formula_in_prop_list B ψ hsb) ))
+: subs_inst (((&B) ⇒ ⊥) ⇒ ((&B') ⇒ ⊥)) (((&P) ⇒' ⊥') ⇒' ((&P') ⇒' ⊥'))  :=
+begin
+  simp only,
+  rw subs_inst,
+  existsi subs_bform_pform B,
+  have hcoe : ↑((and_list_pfs P : prop_form) ⇒' ⊥' ⇒' ((and_list_pfs P') ⇒' ⊥')) =
+  (((and_list_pfs P) ⇒ bmod_form.bot) ⇒ ((and_list_pfs P') ⇒ bmod_form.bot)), refl,
+  simp only at hcoe,
+  rw hcoe,
+  simp only [and_true, subs, eq_self_iff_true],
+  have hpcoe : ∀ Q : list prop_form, ↑(and_list_pfs Q) = and_list_bmods (↑Q : list bmod_form),
+    {
+      intros Q,
+      induction Q with q hq hyp,
+      refl,
+      rw and_list_pfs,
+      have hql : (↑(q ⋀' & hq)) = ((↑q) ⋀ (↑(& hq))), refl,
+      rw [hql, hyp],
+      have hqqcoe : ↑(q :: hq) = list.cons (↑q : bmod_form) (↑hq : list bmod_form), refl,
+      rw [hqqcoe, and_list_bmods],
+    },
+  rw [hpcoe P, hpcoe P'],
+  split,
+    {
+      apply and_list_subs_and_props,
+      exact hp,
+    },
+  exact subs_headed_list B B' P P' ψ hsb hb hpdash,
+end
+
 /-A lemma which is the meat of the next proof-/
 lemma gamm_union_cons (Γ Λ: set bmod_form) (hng: ∃ (A : set bmod_form), Λ = KΓ A) 
 (hlmcs: mcs Γ Λ) (φ ψ: bmod_form) (hpg: φ ∈ Γ) (hpmsg: (φ ⇒ ψ) ∈ Γ) :
@@ -328,9 +524,10 @@ begin
   rw ←in_list_eqv at hsb,
   let B' := headed_list B ψ hsb, -- need to prove (&B ⇒ ⊥) ⇒ (&B' ⇒ ⊥) ∈ Λ
   let P := list_pns B.length,
-  have hpl := headed_taut P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
+  have hpl := headed_taut P (p' (B.length - B.index_of ψ - 1)) (index_formula_in_prop_list B ψ hsb), 
   rcases hng with ⟨A, hla⟩,
-  set P' := headed_list P (p' 0) (pz_in_nonempty_list (nonemp_list_pos_len ψ B hsb)),
+  set P' := headed_list P (p' (B.length - B.index_of ψ - 1)) 
+  (index_formula_in_prop_list B ψ hsb),
   have hplg := @KΓ.taut_cond A _ hpl,
   set pform : bmod_form := ↑((& P ⇒' ⊥') ⇒' (& P' ⇒' ⊥')),
   set bform : bmod_form := (((& B) ⇒ ⊥) ⇒ ((& B') ⇒ ⊥)),
@@ -368,10 +565,13 @@ begin
       apply and.intro hpmsg,
       refine headed_list_tail _ _ _ _ hbgs,
     },
-  sorry,
+  apply final_subs B B' P P' ψ hsb,
+  refl,
+  refl,
+  refl,
 end
 
-/-Properties of MCSs-/
+/-The needed property of MCSs-/
 theorem mcs_preserve_mp (Γ Λ: set bmod_form) (hng : ∃ A, Λ = KΓ A)
 (hlmcs : mcs Γ Λ) (φ ψ : bmod_form) (hpg : φ ∈ Γ) (hpmsg : (φ ⇒ ψ) ∈ Γ) :
 ψ ∈ Γ :=
@@ -394,3 +594,4 @@ begin
     },
   apply gamm_union_cons Γ Λ hng hlmcs φ ψ hpg hpmsg,
 end
+
