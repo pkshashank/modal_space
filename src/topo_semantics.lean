@@ -10,11 +10,11 @@ class topo_model {X : Type*} (T : topological_space X) := (V : ℕ → X → Pro
 /- Truth with respect to topological semantics-/
 @[simp]
 def top_tr {X : Type*} {T : topological_space X} (M : topo_model T) : X → bmod_form → Prop
-| w (p n) := topo_model.V T n w
-| _ ⊥ := false
-| w (! φ) := ¬ (top_tr w φ)
-| w (φ ⋀ ψ) := top_tr w φ ∧ top_tr w ψ
-| w (◇ φ) := ∀ (U : set X), (is_open U → w ∈ U → (∃ (y ∈ U), top_tr y φ))
+| w ('p n) := topo_model.V T n w
+| _ '⊥ := false
+| w ('! φ) := ¬ (top_tr w φ)
+| w (φ '⋀ ψ) := top_tr w φ ∧ top_tr w ψ
+| w ('◇ φ) := ∀ (U : set X), (is_open U → w ∈ U → (∃ (y ∈ U), top_tr y φ))
 
 
 /- We could choose the notation ⊨, but I am not sure whether
@@ -26,7 +26,7 @@ notation M ` - ` w ` ⊩ ` φ  : 50 := top_tr M w φ
 notation M ` ⟦` φ `⟧ ` := {w | M - w ⊩ φ}
 
 /- A simple example  -/
-example {X : Type*} [T : topological_space X] (M : topo_model T) (φ : bmod_form) : M ⟦φ⟧ ⊆ M ⟦◇ φ⟧:=
+example {X : Type*} [T : topological_space X] (M : topo_model T) (φ : bmod_form) : M ⟦φ⟧ ⊆ M ⟦'◇ φ⟧:=
 begin
   intros w hwp,
   simp only [top_tr, exists_prop, set.mem_set_of_eq] at hwp ⊢,
@@ -37,7 +37,7 @@ end
 /- The set of points where ◇ φ is true, is the closure of the set 
 of points where φ is true  -/
 @[simp]
-lemma diamond_is_closure {X : Type*} [T : topological_space X] (M : topo_model T) (φ : bmod_form) : M ⟦◇ φ⟧ =  closure (M ⟦φ⟧) :=
+lemma diamond_is_closure {X : Type*} [T : topological_space X] (M : topo_model T) (φ : bmod_form) : M ⟦'◇ φ⟧ =  closure (M ⟦φ⟧) :=
 begin
   apply eq.symm,
   rw set.subset.antisymm_iff,
@@ -62,15 +62,15 @@ end
 
 /- Some lemmas which we will use later -/
 @[simp]
-lemma neg_is_compl {X : Type*} {T : topological_space X}  (M : topo_model T) (φ : bmod_form) : M ⟦!φ⟧ = (M ⟦φ⟧)ᶜ := rfl 
+lemma neg_is_compl {X : Type*} {T : topological_space X}  (M : topo_model T) (φ : bmod_form) : M ⟦'!φ⟧ = (M ⟦φ⟧)ᶜ := rfl 
 
 @[simp]
-lemma and_is_inter {X : Type*} {T : topological_space X} (M : topo_model T) (φ ψ : bmod_form) : M ⟦(φ ⋀ ψ)⟧ = M ⟦φ⟧ ∩ M ⟦ψ⟧ := rfl
+lemma and_is_inter {X : Type*} {T : topological_space X} (M : topo_model T) (φ ψ : bmod_form) : M ⟦(φ '⋀ ψ)⟧ = M ⟦φ⟧ ∩ M ⟦ψ⟧ := rfl
 
 /- Similarly □ corresponds to interior -/
-lemma box_is_closure {X : Type*} {T : topological_space X} (M : topo_model T) (φ : bmod_form) : interior ((M ⟦φ⟧)) = (M ⟦□ φ⟧) :=
+lemma box_is_closure {X : Type*} {T : topological_space X} (M : topo_model T) (φ : bmod_form) : interior ((M ⟦φ⟧)) = (M ⟦'□ φ⟧) :=
 begin
-  have hc, from diamond_is_closure M (!φ),
+  have hc, from diamond_is_closure M ('!φ),
   rw [neg_is_compl,closure_compl] at hc,
   rw [neg_is_compl, hc, compl_compl],
 end
@@ -91,11 +91,10 @@ by the topological spaces defined on the type `X`.
 2. Further, the textbook definition is for a class of frames,
 and here I have taken cl to be a set. -/
  
-/- The formula `(◇ (p 1) ⇔ !□! (p 1))` is valid on every class of topological
+/- The formula `('◇ ('p 1) '⇔ '!'□'! ('p 1))` is valid on every class of topological
 spaces.  -/ 
-example {X : Type*} (cl : set (topological_space X)) : tvalid_class (◇ (p 1) ⇔ !□! (p 1)) cl :=
+example {X : Type*} (cl : set (topological_space X)) : tvalid_class ('◇ ('p 1) '⇔ '! '□ '!('p 1)) cl :=
 begin
-  simp only,
   rw tvalid_class,
   intros T ht val x,
   simp only [top_tr, imp_self, not_and, not_not, and_self],
@@ -116,7 +115,7 @@ ite (v_top n w) tt ff
 lemma prop_truth_inv_top {X : Type*} {T : topological_space X} (φ : prop_form) (M : topo_model T) (w : X) : M - w ⊩ φ ↔ prop_true φ (topo_model_to_prop_val M.V w) :=
 begin
   induction φ with n ψ hψ ψ1 ψ2 hψ1 hψ2,
-  { have hcoe_n : ↑(prop_form.var n) = p n, refl,
+  { have hcoe_n : ↑(prop_form.var n) = 'p n, refl,
   rw hcoe_n,
   split,
   intro hf,
@@ -143,7 +142,7 @@ begin
   contradiction,},
 
   -- Case for neg
-  have hcoe_neg : ↑(prop_form.neg ψ) = ! ψ, refl,
+  have hcoe_neg : ↑(!' ψ) = '! ψ, refl,
   split,
 
   {intro hf,
@@ -162,7 +161,7 @@ begin
   contradiction,},
   
   -- Case for and 
-  have hcoe_and : ↑(prop_form.and ψ1 ψ2) = (↑ψ1 ⋀ ↑ψ2), refl,
+  have hcoe_and : ↑(prop_form.and ψ1 ψ2) = (↑ψ1 '⋀ ↑ψ2), refl,
   split,
 
   {intro hf,

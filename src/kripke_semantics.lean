@@ -27,11 +27,11 @@ open model
 
 @[simp]
 def tr {W : Type u} (M :model W) : W → bmod_form → Prop
-| w (p n) := V n w
-| _ ⊥ := false
-| w (! φ) := ¬ (tr w φ)
-| w (φ ⋀ ψ) := tr w φ ∧ tr w ψ
-| w (◇ φ) := ∃ (u : W), (frames.R w u ∧ tr u φ)
+| w ('p n) := V n w
+| _ '⊥ := false
+| w ('! φ) := ¬ (tr w φ)
+| w (φ '⋀ ψ) := tr w φ ∧ tr w ψ
+| w ('◇ φ) := ∃ (u : W), (frames.R w u ∧ tr u φ)
 
 
 -- The usual notation for truth
@@ -45,20 +45,20 @@ variables {W : Type u} (φ ψ : bmod_form) (M : model W) (w : W)
 include φ ψ M w
 
 -- We can check what the abbreviations look like
-example : M - w ⊨ (φ ⋁ ψ) = (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
+example : M - w ⊨ (φ '⋁ ψ) = (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
 begin
   simp only [tr, not_and, not_not, eq_iff_iff], -- Lean's simplifier does most of the job here.
   tauto, -- We are proving a propositional tautology
 end
 
 -- It is important to see how truth of boxed formulas is interpreted
-example : (M - w ⊨ □ φ) = ∀ (u : W), (frames.R w u → M - u ⊨ φ) := by simp only [not_exists, tr, not_and, not_not]
+example : (M - w ⊨ '□ φ) = ∀ (u : W), (frames.R w u → M - u ⊨ φ) := by simp only [not_exists, tr, not_and, not_not]
 
 
 -- Similarly for other abbreviations we have the following.
 
-example : (M - w ⊨ (φ ⇒ ψ)) = (M - w ⊨ φ → M - w ⊨ ψ) := by simp only [tr, not_and, not_not]
-example : (M - w ⊨ ⊤) := 
+example : (M - w ⊨ (φ '⇒ ψ)) = (M - w ⊨ φ → M - w ⊨ ψ) := by simp only [tr, not_and, not_not]
+example : (M - w ⊨ '⊤) := 
 begin
   iterate 2 {rw tr},
   trivial,
@@ -79,7 +79,7 @@ def valid_class {W : Type u} (φ : bmod_form) (clF : set (frames W)) := ∀ F �
 -- We first try to create the object `the class of all reflexive frames`, which we call as rel_cl
 def rel_cl (W : Type u) : set (frames W) := { f | reflexive f.R }
 
-example {W : Type u} : valid_class (p 1 ⇒ ◇ p 1) (rel_cl W) :=
+example {W : Type u} : valid_class ('p 1 '⇒ '◇ 'p 1) (rel_cl W) :=
 begin
   rw valid_class,
   unfold rel_cl,
@@ -88,7 +88,7 @@ begin
   rw valid,
   intros val w,
   let M := @model.mk _ F val,
-  show M - w ⊨ (p 1 ⇒ ◇ p 1),
+  show M - w ⊨ ('p 1 '⇒ '◇ 'p 1),
   simp only [not_exists, exists_prop, tr, not_and, not_not, not_forall],
 
   intro hw,
@@ -116,7 +116,7 @@ begin
   induction φ with n ψ hψ ψ1 ψ2 hψ1 hψ2,
   
   -- Case for the propositional variables
-  { have hcoe_n : ↑(prop_form.var n) = p n, refl,
+  { have hcoe_n : ↑(prop_form.var n) = 'p n, refl,
   rw hcoe_n,
   split,
   intro hf,
@@ -143,7 +143,7 @@ begin
   contradiction,},
 
   -- Case for neg
-  have hcoe_neg : ↑(prop_form.neg ψ) = ! ψ, refl,
+  have hcoe_neg : ↑(!' ψ) = '! ψ, refl,
   split,
 
   {intro hf,
@@ -162,7 +162,7 @@ begin
   contradiction,},
   
   -- Case for and 
-  have hcoe_and : ↑(prop_form.and ψ1 ψ2) = (↑ψ1 ⋀ ↑ψ2), refl,
+  have hcoe_and : ↑(prop_form.and ψ1 ψ2) = (↑ψ1 '⋀ ↑ψ2), refl,
   split,
 
   {intro hf,

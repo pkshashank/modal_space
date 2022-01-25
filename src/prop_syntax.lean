@@ -22,8 +22,8 @@ notation φ ` ⋁' ` ψ := !'(!'φ ⋀' !'ψ)
 notation φ ` ⇒' ` ψ := (!'φ) ⋁' ψ
 notation φ ` ⇔' ` ψ := (φ ⇒' ψ) ⋀' (ψ ⇒' φ)
 
--- Evaluating a propositional formula
-
+/- Notice the **'** in the abbreviation. It has been done to avoid ambiguous
+notation overloads -/
 /--Evaluating a propositional valuation with respect to a valuation-/
 @[simp]
 def prop_eval (v : ℕ → bool) : prop_form → bool
