@@ -99,7 +99,7 @@ def list_pns_bforms : ℕ → list bmod_form
 (p' i ⋀' p' n ⋀' ... ⋀' p' i+1 ⋀' p' i-1 ⋀' ... ⋀' p'0 ⇒' ⊥')
 is a propositional tautology, where i is a special number of
 our choice -/
-lemma list_tauts {n i : ℕ} (hi : i < n) : (((& list_pns n) ⇒' ⊥') ⇒' ((& ((p' i)::(list_pns n))) ⇒' ⊥' )) ∈ prop_taut :=
+lemma list_tauts {n i : ℕ} (hi : i < n) : (((& list_pns n) ⇒' ⊥') ⇒' ((& ((p' i)::(list_pns n))) ⇒' ⊥')) ∈ prop_taut :=
 begin
   rw prop_taut,
   simp only [set.mem_set_of_eq],
@@ -153,7 +153,7 @@ begin
   exact hksuc,
 end
 
---------------------------------------------------------------
+-------------------------------------------------------------
 /- The index from right of anything appearing in the list is 
 less than the length of the list -/
 lemma index_right_le_length {α : Type*} (A : list α) (a : α) 
@@ -165,9 +165,11 @@ begin
   simp only [list.mem_cons_iff] at ha,
   rw [list.index_of, list.find_index],
   split_ifs,
-  simp only [tsub_zero, nat.add_succ_sub_one, add_zero, lt_add_iff_pos_right, nat.lt_one_iff],
-  rw list.index_of at hyp,
-  simp only [nat.succ_sub_succ_eq_sub],
+    {
+      simp only [tsub_zero, nat.add_succ_sub_one, add_zero, lt_add_iff_pos_right, list.length, nat.lt_one_iff],
+    },
+  rw [list.index_of] at hyp,
+  simp only [nat.succ_sub_succ_eq_sub, list.length],
   rw or_iff_not_imp_left at ha,
   specialize ha h,
   specialize hyp ha,
@@ -183,11 +185,60 @@ match (B.nth (B.length - n - 1)) with
 | none := '⊥
 end
 
+/- The index of any element of a list is less than the
+length of the list (because indices start from zero!) -/
+lemma index_lt_length {α : Type*} {A : list α} {a : α}
+(ha : a ∈ A) : A.index_of a < A.length :=
+begin
+  induction A with b bl hyp,
+  simp only [list.not_mem_nil] at ha, contradiction,
+  rw [list.index_of, list.find_index],
+  split_ifs,
+  simp only [nat.succ_pos', list.length],
+  rw [list.mem_cons_iff, or_iff_not_imp_left] at ha,
+  specialize ha h,
+  specialize hyp ha,
+  rw [list.length, ←list.index_of],
+  exact nat.lt_succ_iff.mpr hyp,
+end
+
+/- In a list containing 'a', the element at the index of 'a'
+is 'a' itself. The proof is oddly similar to
+'index_lt_length' -/
+lemma nth_at_index {α : Type*} {A : list α} {a : α} (ha : a ∈ A) : A.nth (list.index_of a A) = some a :=
+begin
+  induction A with b bl hyp,
+  simp only [list.not_mem_nil] at ha, contradiction,
+  rw [list.index_of, list.find_index],
+  split_ifs,
+  rw h, refl,
+  rw [list.mem_cons_iff, or_iff_not_imp_left] at ha,
+  specialize ha h,
+  specialize hyp ha,
+  rw [list.nth, ←list.index_of, hyp],
+end
+
+/- 'subs_func_list_bmod B' maps each number to the formula 
+whose index from the right in B is the number itself. For 
+example if B is [φ0,...,φ n-1], then the substitution function 
+maps 0 to φ n-1, 1 to φ n-2,..., and n-1 to φ 0. Where other 
+numbers are being mapped doesn't concern us -/
+lemma subs_maps_rindex {B : list bmod_form} {ψ : bmod_form} (hs : ψ ∈ B)
+: subs_func_list_bmod B (B.length - list.index_of ψ B - 1) = ψ :=
+begin
+  rw subs_func_list_bmod,
+  have hlen := index_lt_length hs,
+  have hcalc : B.length - (B.length - list.index_of ψ B - 1) - 1 = B.index_of ψ, omega,
+  rw [hcalc, nth_at_index hs],
+  refl,
+end
+
+
 /- For a formula in which the only propositonal variables
 are p1,...,pn, if n is lesser than the length of a list B,
 then subs_func_list_bmod is the same for B and any list
 which B is a tail of. -/
-lemma same_on_intial {B : list bmod_form} {φ : bmod_form}
+lemma same_on_intial_pfs {B : list bmod_form} {φ : bmod_form}
 {n : ℕ} (hn : n ≤ B.length) : subs (subs_func_list_bmod B)
 (& list_pns_bforms n) = subs (subs_func_list_bmod (φ :: B))
 (& list_pns_bforms n) :=
@@ -229,44 +280,14 @@ begin
       refl,
     },
   rw hyp,
-  apply same_on_intial, refl,
+  apply same_on_intial_pfs, refl,
 end
 
-lemma lem2 {B : list bmod_form} {ψ : bmod_form} (hp : ψ ∈ B) : ψ = subs_func_list_bmod B (B.length - B.index_of ψ - 1) :=
-begin
-  induction B with φ bl hyp,
-  simp only [list.not_mem_nil] at hp, contradiction,
-  simp only [list.mem_cons_iff] at hp,
-  rw [list.length, list.index_of, list.find_index],
-  split_ifs,
-    {
-      rw [h, subs_func_list_bmod, list.length],
-      simp only [tsub_zero, nat.add_succ_sub_one, add_zero, add_tsub_cancel_left, list.nth],
-      refl,
-    },
-  rw or_iff_not_imp_left at hp,
-  specialize hp h,
-  specialize hyp hp,
-  have hcalc : bl.length + 1 - (list.find_index (eq ψ) bl).succ - 1 = bl.length - (list.find_index (eq ψ) bl) - 1, omega,
-  rw hcalc,
-  rw list.index_of at hyp,
-  set I := list.find_index (eq ψ) bl,
-  rw hyp,
-  repeat {rw subs_func_list_bmod},
-  rw list.length,
-  have hcalc' : bl.length + 1 - (bl.length - I - 1) - 1 = 
-  bl.length - (bl.length - I - 1) - 1 + 1,
-    {
-      sorry,
-    },
-  sorry,
-end 
-
-lemma lem1 {B : list bmod_form} {ψ : bmod_form} (hp : ψ ∈ B)
-(N I : ℕ) (hi : I = B.length - B.index_of ψ - 1)
-(hn : N = B.length) : subs_inst (& B '⇒ '⊥ '⇒
-(& ψ :: B '⇒ '⊥)) (& list_pns_bforms N '⇒ '⊥ '⇒
-(& 'p I :: list_pns_bforms N '⇒ '⊥)) :=
+/- Under 'subs_func_list_bmod', the modal formula (& B '⇒ '⊥ '⇒
+(& ψ :: B '⇒ '⊥)) is a substitution instance of a 
+propositional tautology  -/
+lemma bmod_form_is_subs_inst {B : list bmod_form} {ψ : bmod_form} (hp : ψ ∈ B) {N I : ℕ} (hi : I = B.length - B.index_of ψ - 1) (hn : N = B.length) :
+subs_inst (& B '⇒ '⊥ '⇒ (& ψ :: B '⇒ '⊥)) (& list_pns_bforms N '⇒ '⊥ '⇒ (& 'p I :: list_pns_bforms N '⇒ '⊥)) :=
 begin
   rw subs_inst,
   existsi subs_func_list_bmod B,
@@ -277,25 +298,46 @@ begin
   repeat {rw and_list_bmods},
   simp only [subs],
   split,
-    { 
-      sorry,
-    },
+  symmetry,
+  rw hi,
+  exact subs_maps_rindex hp,
   rw hn,
   exact and_blist_eq_subbed_pf_list,
+end
+
+/- This is what the propositional tautology looks like as a modal formula -/
+lemma prop_taut_as_modal {n i : ℕ} : ↑(& list_pns n ⇒' ⊥' ⇒' (& p' i :: list_pns n ⇒' ⊥')) = ((& list_pns_bforms n '⇒ '⊥) '⇒ (& 'p i :: list_pns_bforms n '⇒ '⊥)) :=
+begin
+  rw [and_list_pfs, and_list_bmods],
+  have h_coe_list : ∀ m, (↑(& list_pns m) : bmod_form) = & list_pns_bforms m,
+    {
+      intros m,
+      induction m with k ih,
+      refl,
+      rw [list_pns, list_pns_bforms, and_list_pfs, and_list_bmods],
+      have hcoe : (↑(p' k ⋀' & list_pns k) : bmod_form ) = ('p k '⋀ (↑(& list_pns k)) : bmod_form), refl,
+      rw [hcoe, ih],
+    },
+  specialize h_coe_list n,
+  have hcoe : (↑(& list_pns n ⇒' ⊥' ⇒' (p' i ⋀' & list_pns n ⇒' ⊥')) : bmod_form) = (((↑(& list_pns n) : bmod_form) '⇒ '⊥) '⇒ ('p i '⋀ (↑(& list_pns n) : bmod_form) '⇒ '⊥)), refl,
+  rw [hcoe, h_coe_list],
 end
 
 /-For any list of modal formulas [φ1,...,φn], the formula
 (φ1 '⋀...'⋀ φn '⇒ '⊥) '⇒ (φi '⋀ φ1 '⋀...'⋀ φn '⇒ '⊥) belongs
 in every normal logic-/
-lemma lem (B : list bmod_form) (ψ : bmod_form)
-(Γ : set bmod_form) (hp : ψ ∈ B) :
+lemma and_list_as_taut_in_normal_logic (B : list bmod_form) (ψ : bmod_form) (Γ : set bmod_form) (hp : ψ ∈ B) :
 ((&B '⇒ '⊥) '⇒ (& (ψ :: B) '⇒ '⊥)) ∈ KΓ Γ :=
 begin
   have htaut := list_tauts (index_right_le_length B ψ hp),
-  set I := B.length - B.index_of ψ - 1,
-  set N := B.length,
+  set I := B.length - B.index_of ψ - 1 with hi,
+  set N := B.length with hn,
   have htaut_in_gamm := @KΓ.taut_cond Γ _ htaut,
-  sorry,
+  have hsub := bmod_form_is_subs_inst hp hi hn,
+  apply KΓ.subst hsub,
+  have htaut_coe := @KΓ.taut_cond Γ _ htaut,
+  rw prop_taut_as_modal at htaut_coe,
+  exact htaut_coe,
 end
 --------------------------------------------------------------
 /- A propositional tautology that will be used later -/
@@ -369,4 +411,3 @@ begin
     },
   apply gamm_union_cons Γ Λ hng hlmcs φ ψ hpg hpmsg,
 end
-
