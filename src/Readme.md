@@ -1,5 +1,6 @@
 # Contents 
 
+## syntax
 1. **prop_syntax.lean** : It contains the syntax for the propositional language. It is needed because we will use propositional tautologies to define normal logics.
 2. **syntax.lean** : It contains the syntax for the basic modal language, and how the propositional language is a sublanguage of the basic modal language.
 3. **kripke_semantics.lean** : It defines truth and validity
