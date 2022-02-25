@@ -7,7 +7,7 @@
 ## kripke_semantics
 1. **truth_and_validity.lean** : It defines truth and validity
 2. **normal_logics.lean** : It defines normal logics from the 'bottom-up' approach and contains basic results about them. It also describes the 'top-down' approach of defining normal logics.
-3. **soundness_and_completeness.lean** : It defines soundness and completeness for normal logics under the Kripke semantics, and constains some basic examples.
+3. **soundness_and_completeness.lean** : It defines soundness and completeness for normal logics under the Kripke semantics, and contains some basic examples.
 
 ## topo_semantics
 1. **basics.lean** : It defines the topological semantics and topological validity.
