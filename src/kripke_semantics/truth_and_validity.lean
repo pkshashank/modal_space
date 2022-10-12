@@ -42,12 +42,12 @@ notation M ` - ` w ` ⊨ ` φ  : 50 := tr M w φ
 section abbreviations
 
 variables {W : Type u} (φ ψ : bmod_form) (M : model W) (w : W)
-include φ ψ M w
+
 
 -- We can check what the abbreviations look like
-example : M - w ⊨ (φ '⋁ ψ) = (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
+example : M - w ⊨ (φ '⋁ ψ) ↔ (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
 begin
-  simp only [tr, not_and, not_not, eq_iff_iff], -- Lean's simplifier does most of the job here.
+  simp only [tr, not_and, not_not], -- Lean's simplifier does most of the job here.
   tauto, -- We are proving a propositional tautology
 end
 
