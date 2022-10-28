@@ -42,7 +42,7 @@ notation M ` - ` w ` ⊨ ` φ  : 50 := tr M w φ
 section abbreviations
 
 variables {W : Type u} (φ ψ : bmod_form) (M : model W) (w : W)
-
+--include φ ψ M w
 
 -- We can check what the abbreviations look like
 example : M - w ⊨ (φ '⋁ ψ) ↔ (M - w ⊨ φ ∨ M - w ⊨ ψ) :=
