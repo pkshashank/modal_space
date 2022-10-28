@@ -1,7 +1,7 @@
 import tactic
 attribute [instance] classical.prop_decidable
--------------------------------------------------------
---Syntax for basic propositonal language
+
+/-**Syntax for the basic propositonal language**-/
 
 /--Propositional formulas-/
 inductive prop_form : Type
@@ -32,11 +32,9 @@ def prop_eval (v : ℕ → bool) : prop_form → bool
 | (neg φ) := bnot (prop_eval φ)
 | (and φ ψ) := band (prop_eval φ) (prop_eval ψ)
 
----Defining a propositional formula to be true
-
+/--A propositional is true with respect to a valuation if it evaluates to true -/
 def prop_true (φ : prop_form) (v : ℕ → bool) : Prop := prop_eval v φ = tt
 
--- Defining a propositional tautology
+/--A propositional tautology is a formula which evaluates to true for every valuation-/
 def prop_taut := { φ | ∀ v, prop_true φ v }
-
 ---------------------------------------------------------
