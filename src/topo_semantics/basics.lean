@@ -28,10 +28,23 @@ notation M ` ⟦` φ `⟧ ` := {w | M - w ⊩ φ}
 /- A simple example  -/
 example {X : Type*} [T : topological_space X] (M : topo_model T) (φ : bmod_form) : M ⟦φ⟧ ⊆ M ⟦'◇ φ⟧:=
 begin
-  intros w hwp,
-  simp only [top_tr, exists_prop, set.mem_set_of_eq] at hwp ⊢,
-  intros U hoU hwU,
-  exact ⟨w,⟨hwU,hwp⟩⟩,
+  -- Notice the changes in the tactic state
+  intro w,
+  intro hwp,
+  simp only [top_tr],
+  simp only [exists_prop],
+  simp only [set.mem_set_of_eq],
+  simp only [set.mem_set_of_eq] at hwp,
+  intro U,
+  intro hoU,
+  intro hwU,
+  existsi w,
+  split,
+    {
+      exact hwU,
+    },
+  -- An assumption, namely hwp, is the needed term
+  assumption,
 end
 
 /- The set of points where ◇ φ is true, is the closure of the set 
@@ -43,36 +56,45 @@ begin
   rw set.subset.antisymm_iff,
   split,
     {
-      intros x h0,
+      intro x,
+      intro h0,
       rw mem_closure_iff at h0,
-      simp only [top_tr, exists_prop, set.mem_set_of_eq],
-      intros U h1 h2,
-      specialize h0 U,
-      rw is_open at h0,
-      exact h0 h1 h2,
+      simp only [top_tr],
+      simp only [exists_prop],
+      simp only [set.mem_set_of_eq],
+      assumption,
     },
-  intros φ hdp,
+  intro x,
+  intro hdp,
   rw mem_closure_iff,
   simp only [top_tr, exists_prop, set.mem_set_of_eq] at hdp,
-  intros U hoU hpU,
-  rw is_open at hoU,
-  specialize hdp U hoU hpU,
+  -- instead of using 'assumption', we can give the exact name
+  -- of the assumption too
   exact hdp,
 end
 
 /- Some lemmas which we will use later -/
 @[simp]
-lemma neg_is_compl {X : Type*} {T : topological_space X}  (M : topo_model T) (φ : bmod_form) : M ⟦'!φ⟧ = (M ⟦φ⟧)ᶜ := rfl 
+lemma neg_is_compl {X : Type*} {T : topological_space X}  (M : topo_model T) (φ : bmod_form) : M ⟦'!φ⟧ = (M ⟦φ⟧)ᶜ :=
+begin
+  simp only [top_tr],
+  -- By the very definition of set complement
+  refl,
+end
 
 @[simp]
 lemma and_is_inter {X : Type*} {T : topological_space X} (M : topo_model T) (φ ψ : bmod_form) : M ⟦(φ '⋀ ψ)⟧ = M ⟦φ⟧ ∩ M ⟦ψ⟧ := rfl
 
 /- Similarly □ corresponds to interior -/
-lemma box_is_closure {X : Type*} {T : topological_space X} (M : topo_model T) (φ : bmod_form) : interior ((M ⟦φ⟧)) = (M ⟦'□ φ⟧) :=
+lemma box_is_interior {X : Type*} {T : topological_space X} (M : topo_model T) (φ : bmod_form) : interior ((M ⟦φ⟧)) = (M ⟦'□ φ⟧) :=
 begin
+  -- we can introduce new premises, given we can prove them
   have hc, from diamond_is_closure M ('!φ),
-  rw [neg_is_compl,closure_compl] at hc,
-  rw [neg_is_compl, hc, compl_compl],
+  rw neg_is_compl at hc,
+  rw closure_compl at hc,
+  rw neg_is_compl,
+  rw hc,
+  rw compl_compl,
 end
 
 ------------------------------------------------
@@ -81,8 +103,7 @@ end
 def tvalid {X : Type*} (φ : bmod_form) (T : topological_space X) :=
 ∀ (V : ℕ → X → Prop) (x : X), @topo_model.mk _ T V - x ⊩ φ
 
-def tvalid_class {X : Type*} (φ : bmod_form) (cl : set (topological_space X)):=
-∀ (T ∈ cl) (V : ℕ → X → Prop) (x : X), @topo_model.mk _ T V - x ⊩ φ
+def tvalid_class {X : Type*} (φ : bmod_form) (cl : set (topological_space X)):= ∀ (T ∈ cl), tvalid φ T
 
 
 /- Two points should be noted
@@ -96,6 +117,7 @@ spaces.  -/
 example {X : Type*} (cl : set (topological_space X)) : tvalid_class ('◇ ('p 1) '⇔ '! '□ '!('p 1)) cl :=
 begin
   rw tvalid_class,
+  -- commands can be grouped together for brevity
   intros T ht val x,
   simp only [top_tr, imp_self, not_and, not_not, and_self],
 end
